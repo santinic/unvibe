@@ -1,7 +1,7 @@
-# UnitMagic: Generate code that pass unit-tests
+# UnitAI: Generate code that passes unit-tests
 
-UnitMagic quickly generates many alternative implementations for the functions
-annotated with `@unitmagic` and re-runs your unit-tests to find the best one.
+UnitAI quickly generates many alternative implementations for the functions
+annotated with `@unitai` and re-runs your unit-tests to find the best one.
 
 This approach has been demonstrated in research and in practice to produce
 much better results than simply using code-generation alone 
@@ -10,9 +10,9 @@ much better results than simply using code-generation alone
 ## Example
     
 ```python
-import unitmagic
+import unitai
 
-@unitmagic
+@unitai
 def validate_email(email: str) -> bool:
     pass
     
