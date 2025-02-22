@@ -8,7 +8,8 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "redis (>=5.2.1,<6.0.0)"
+    "redis (>=5.2.1,<6.0.0)",
+    "termcolor (>=2.5.0,<3.0.0)"
 ]
 
 

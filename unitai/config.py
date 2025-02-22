@@ -9,7 +9,8 @@ def read_config():
         raise Exception(f'No {config_file_abs_path} config file found.')
     print(f'Reading {config_file_abs_path} config')
     with open(config_file_abs_path, 'r') as file:
-        config = json.load(file)
+        without_comments = ''.join([line for line in file.readlines() if not line.strip().startswith('//')])  # remove comments
+        config = json.loads(without_comments)
         return config
 
 
