@@ -2,6 +2,8 @@ import inspect
 import re
 from typing import Callable
 
+from termcolor import colored
+
 
 def as_short_code(code, max_len=150):
     short_code = code.replace('\n', ' ').strip()[:max_len] + '…'
@@ -34,6 +36,14 @@ class MagicFunction:
         return f'MagicFunction({short_code}...)'
 
     def __call__(self, *args, **kwargs):
-        assert self.impl is not None, f'Implementation not set for {self}'
+        if self.impl is None:
+            msg = colored(
+                'You are probably running a function with @ai annotation without using UnitAI.\n'
+                'To run UnitAI you need to define unit-tests and annotate functions with @ai and then run:\n', 'red')
+            msg += (
+                '$ unitai tests/                          # To discover all tests in the tests/ folder\n'
+                '$ unitai tests/test_my_test_case.py      # To run only the tests in the indicated file')
+            raise Exception(f'Implementation not set for {self}.\n\n{msg}')
+
         exec(self.impl)  # define the function
         return eval(f'{self.func_name}(*args, **kwargs)')  # then call it

@@ -1,6 +1,6 @@
 import re
 from pprint import pprint
-from typing import List
+from typing import List, Dict, Tuple
 
 import ollama
 import redis
@@ -20,6 +20,7 @@ def redis_cached(func):
     """redis memoization for functions"""
 
     def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)  # bypass
         key = f'{func.__name__}__{args}__{kwargs}'
         if redis_client.exists(key):
             print('Return from cache', key[:150] + '…')
@@ -29,7 +30,6 @@ def redis_cached(func):
             result = func(*args, **kwargs)
             redis_client.set(key, result)
             redis_client.expire(key, config['cache']['expire'])
-        print(colored('LLM OUTPUT: ' + result, 'blue'))
         return result
 
     return wrapper
@@ -94,55 +94,78 @@ def call_ollama(system, prompt, temperature, model):
     return resp.response
 
 
-example = '''Example:
+example = '''
 <input>
-@ai
-def mul(a, b):
+def pluck(l, key):
+    """Pluck a key from a list of dictionaries."""
     pass
-            
-def maths():
-    def add(a, b):
-        return a + b 
-       
-    @ai 
-    def div(a, b):
-        pass
+    
+assert pluck([{'name': 'Alice'}, {'name': 'Bob'}], 'name') == ['Alice', 'Bob']
+</input>
+<implement name="pluck">
+def pluck(l, key):
+    return [d[key] for d in l]
+</implement>
 
-    assert mul(2, 3) == 6
-    assert div(6, add(2, 1)) == 2
+<input>
+def permutations_str(s: str):
+    """Return all permutations of a string."""
+    pass
+
+class TestPermutations(unittest.TestCase):
+    def test_permutations(self):
+        self.assertEqual(set(permutations_str('abc')), {'abc', 'acb', 'bac', 'bca', 'cab', 'cba'})
+</input>
+<implement name="permutations_str">
+def permutations_str(s: str):
+    from itertools import permutations
+    return set(''.join(p) for p in permutations(s))
+</implement>
+
+<input>
+
+class Utils:
+        def is_palindrome(s: str):
+            return s == s[::-2]
+    
+class TestIsPalindrome(unittest.TestCase):
+    def test_is_palindrome(self):
+        utils = Utils()
+        self.assertTrue(utils.is_palindrome('racecar'))
+        self.assertFalse(utils.is_palindrome('hello'))
 </input>
 <errors>
+Traceback (most recent call last):
+    line 19, in test_is_palindrome
+        self.assertTrue(utils.is_palindrome('racecar'))
 </errors>
-<output implement="mul div">
-<implement name="mul">
-def mul(a, b):
-    return a * b
-</implement>
-<implement name="div">
-def div(a, b):
-    return a / b
-</implement>
-</output>
 
+<implement name="is_palindrome">
+        def is_palindrome(s: str):
+            return s == s[:-1]
+</implement>
 '''
 
+system = ("- You only write code inside the <implement> tags.\n"
+          "- No explanations before or after.\n"
+          "- Only implement the requested functions.\n"
+          "- If Errors are provided, fix those errors.\n"
+          "- Use as many <implement> as needed. Every function should be in it own <implement> tag.\n")
 
-def ai_call(mfs: List[MagicFunction], context, errors, temperature):
-    system = ("You only output code inside the <output> tag. No explanations before or after <output>. "
-              "Only implement the requested functions. "
-              "If <errors> tag is present, fix those errors.")
-    errors_str = '\n'.join(errors)
-    func_names_str = ' '.join([mf.func_name for mf in mfs])
+def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> Tuple[str, Dict[str, str]]:
     assert context.strip() != '', 'Context should not be empty'
+    func_names_str = ' '.join([mf.func_name for mf in mfs])
+    errors_tag = ''
+    if len(errors) > 0:
+        errors_tag = '<errors>\n' + '\n'.join(errors) + '</errors>'
     prompt = f'''
 {example}
 <input>
 {context}
 </input>
-<errors>
-{errors_str}
-</errors>
-<output implement="{func_names_str}">
+{errors_tag}
+
+Implement the functions: {func_names_str}
 '''
     print('LLM PROMPT:', system + '\n' + prompt)
     provider = config['ai']['provider']
@@ -155,10 +178,10 @@ def ai_call(mfs: List[MagicFunction], context, errors, temperature):
     elif provider == 'ollama':
         resp_text = call_ollama(system, prompt, temperature, model=config['ai']['model'])
     else:
-        raise NotImplementedError(f'{config.ai} not implemented')
+        raise NotImplementedError(f'{provider} not implemented')
 
     implements_dict = parse_output(resp_text)
-    return implements_dict
+    return resp_text, implements_dict
 
 
 def parse_output(t):
