@@ -13,7 +13,7 @@ class State:
     orig_context: str = ''  # all the files at the beginning of the search
     context: str = None  # the orig_context concatenated with the current implementations from this state
     mfs: List[MagicFunction]  # the magic functions with their original definitions and current implementations
-    tests: str  # the source code of the test class
+    tests: str = None  # the source code of the test class
     errors: List[str]  # the errors we got from the tests
     score: float  # the score for this solution
 
@@ -23,14 +23,18 @@ class State:
             context += (mf.impl if mf.impl is not None else mf.clean_orig_code) + '\n'
         return context
 
+    def __repr__(self):
+        return f'<{self.score}, {len(self.errors)}>'
+
 
 def generate_new_state(state: State, temperature: float, test_class) -> State:
     """Generates a new state for program space search"""
     new_state = State()
+    new_state.tests = state.tests
     new_state.mfs = copy(state.mfs)
     resp_text, impls_dict = ai_call(state.mfs, state.context, state.tests, state.errors, temperature)
-    if len(impls_dict) == len(state.mfs):
-        print(f'{len(impls_dict)} implementations')
+    if len(impls_dict) >= len(state.mfs):
+        print(f'Received {len(impls_dict)} implementations, expected {len(state.mfs)}')
         for mf in new_state.mfs:
             if mf.func_name in impls_dict:
                 mf.set_impl(impls_dict[mf.func_name])
@@ -40,25 +44,12 @@ def generate_new_state(state: State, temperature: float, test_class) -> State:
         new_state.score = score
     else:
         print('LLM OUTPUT:', resp_text)
-        print(f'Model returned {len(impls_dict)} implementations, expected {len(state.mfs)}')
         new_state.score = 0
-        new_state.errors = 'No <ouput><implementation>'
+        expected_func_names = ','.join([mf.func_name for mf in new_state.mfs])
+        received_func_names = ','.join([k for k, _ in impls_dict.items()])
+        new_state.errors = f'Expected implementations for {expected_func_names}. Received instead {received_func_names}'
+        print(new_state.errors)
     return new_state
-
-
-def main(source_files, test_files, replace, output_folder):
-    # TODO: if is folder, get all files
-    source = source_files[0]
-    test_file = test_files[0]
-
-    # Read file source and test
-    # with open(source, 'r') as f:
-    #     source_content = f.read()
-    with open(test_file, 'r') as f:
-        texst_file_content = f.read()
-
-
-    start_search(mfs, test_class)
 
 
 def start_search(mfs: List[MagicFunction], test_class: Type[TestCase]):
@@ -81,8 +72,8 @@ def start_search(mfs: List[MagicFunction], test_class: Type[TestCase]):
 def search(mfs: List[MagicFunction], test_class: TestCase):
     random_spread = 2
     take_best_n = 3
-    max_depth = 3
-    max_temperature = 1.0
+    max_depth = 10
+    max_temperature = 0.3
 
     # Generate the root state
     state = State()
@@ -118,9 +109,9 @@ def search(mfs: List[MagicFunction], test_class: TestCase):
             if found: break
         states = states + new_states
         states.sort(key=lambda s: s.score, reverse=True)
-        print('SCORES   ', [s.score for s in states], 'Picking the best', take_best_n)
+        print('SCORES   ', [s for s in states], 'Picking the best', take_best_n)
         states = states[:take_best_n]
-        print('SELECTED ', [s.score for s in states])
+        print('SELECTED ', [s for s in states])
         if found: break
     return states
 

@@ -1,5 +1,6 @@
 import inspect
 import re
+import sys
 from typing import Callable
 
 from termcolor import colored
@@ -21,6 +22,7 @@ class MagicFunction:
         self.orig_code = inspect.getsource(orig_func)
         self.func_name = orig_func.__name__
         self.impl = None
+        self.eval = eval
 
     def set_impl(self, impl):
         self.impl = impl
@@ -46,4 +48,4 @@ class MagicFunction:
             raise Exception(f'Implementation not set for {self}.\n\n{msg}')
 
         exec(self.impl)  # define the function
-        return eval(f'{self.func_name}(*args, **kwargs)')  # then call it
+        return self.eval(f'{self.func_name}(*args, **kwargs)')  # then call it

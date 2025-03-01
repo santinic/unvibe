@@ -133,12 +133,12 @@ class TestIsPalindrome(unittest.TestCase):
         utils = Utils()
         self.assertTrue(utils.is_palindrome('racecar'))
         self.assertFalse(utils.is_palindrome('hello'))
-</input>
 <errors>
 Traceback (most recent call last):
     line 19, in test_is_palindrome
         self.assertTrue(utils.is_palindrome('racecar'))
 </errors>
+</input>
 
 <implement name="is_palindrome">
         def is_palindrome(s: str):
@@ -148,9 +148,11 @@ Traceback (most recent call last):
 
 system = ("- You only write code inside the <implement> tags.\n"
           "- No explanations before or after.\n"
-          "- Only implement the requested functions.\n"
-          "- If Errors are provided, fix those errors.\n"
-          "- Use as many <implement> as needed. Every function should be in it own <implement> tag.\n")
+          "- Implement ONLY the requested functions! no wrappers, only the function.\n"
+          "- If errors and implementation are already in the input, implement again fixing the errors.\n"
+          "- Use as many <implement> as needed. Every function should be in it own <implement> tag.\n"
+          "- Write all import inside functions.")
+
 
 def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> Tuple[str, Dict[str, str]]:
     assert context.strip() != '', 'Context should not be empty'
@@ -162,10 +164,10 @@ def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> Tu
 {example}
 <input>
 {context}
-</input>
 {errors_tag}
+</input>
 
-Implement the functions: {func_names_str}
+Implement or Fix the functions: {func_names_str}
 '''
     print('LLM PROMPT:', system + '\n' + prompt)
     provider = config['ai']['provider']
