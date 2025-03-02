@@ -1,6 +1,5 @@
 import inspect
 import re
-import sys
 from typing import Callable
 
 from termcolor import colored
@@ -12,17 +11,32 @@ def as_short_code(code, max_len=150):
     return short_code
 
 
+def split_imports_and_code(impl):
+    imports = []
+    lines = impl.split('\n')
+    for i, line in enumerate(lines):
+        clean_line = line.strip()
+        if line == '':
+            continue
+        elif clean_line.startswith('import ') or clean_line.startswith('from '):
+            imports.append(line)
+        else:
+            break
+    code = '\n'.join(lines[i:])
+    imports = '\n'.join(imports)
+    return imports, code
+
+
 class MagicFunction:
     orig_func: Callable
     orig_code: str
     clean_orig_code: str
 
-    def __init__(self, orig_func: Callable):
+    def __init__(self, orig_func: str):
         self.orig_func = orig_func
         self.orig_code = inspect.getsource(orig_func)
         self.func_name = orig_func.__name__
         self.impl = None
-        self.eval = eval
 
     def set_impl(self, impl):
         self.impl = impl
@@ -47,5 +61,8 @@ class MagicFunction:
                 '$ unitai tests/test_my_test_case.py      # To run only the tests in the indicated file')
             raise Exception(f'Implementation not set for {self}.\n\n{msg}')
 
-        exec(self.impl)  # define the function
-        return self.eval(f'{self.func_name}(*args, **kwargs)')  # then call it
+        imports, code = split_imports_and_code(self.impl)
+        ___eval = eval
+        exec(imports, globals())  # run the imports
+        exec(code)  # define the function
+        return ___eval(f'{self.func_name}(*args, **kwargs)')  # then call it

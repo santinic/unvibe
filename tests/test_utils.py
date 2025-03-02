@@ -1,7 +1,7 @@
 import unittest
 
-import unitai
 from unitai.ai import parse_output
+from unitai.core import cleanup_error_str, match_indentation
 
 
 class UtilsTest(unittest.TestCase):
@@ -69,7 +69,7 @@ def fun(a, b):
           File "<string>", line 6, in exp
         NameError: name 'mul' is not defined
         '''
-        ret = unitai.cleanup_error_str(error_str)
+        ret = cleanup_error_str(error_str)
         print(ret)
         self.assertEqual(type(ret), str)
         self.assertNotIn('/Users/claudio', ret)
@@ -86,7 +86,7 @@ def fun(a, b):
                    ^^^^^^^^^^^^^^^^^^^^^
         AssertionError: Implementation not set for MagicFunction(@ai def fun(a, b): """Implements addition.""" pass…...)
         '''
-        ret = unitai.cleanup_error_str(error_str)
+        ret = cleanup_error_str(error_str)
         self.assertEqual(type(ret), str)
 
     def test_match_indentation(self):
@@ -102,5 +102,5 @@ def fun(a, b):
         expected = '''        def fun(a, b):
             """Implements addition."""
             return a + b'''
-        ret = unitai.match_indentation(orig, gen)
+        ret = match_indentation(orig, gen)
         self.assertEqual(ret, expected)

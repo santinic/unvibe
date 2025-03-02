@@ -53,7 +53,7 @@ class BasicTests(unittest.TestCase):
         self.assertEqual(state.score, 1)
         self.assertEqual(len(state.errors), 0)
         self.assertEqual(len(state.mfs), 3)
-        self.assertEqual(set([mf.func_name for mf in state.mfs]), set('add', 'sqrt', 'exp'))
+        self.assertEqual(set([mf.func_name for mf in state.mfs]), set(['add', 'sqrt', 'exp']))
 
     @unittest.skip("Not implemented yet")
     def test_complex_class(self):
