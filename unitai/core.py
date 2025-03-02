@@ -7,15 +7,21 @@ from typing import List, Type
 from unittest import TestCase
 
 from unitai import MagicFunction, ai_call, magic_functions, annotation_text
+from unitai.rand import up_to_03
+from unitai.tree import create_page_and_open_browser
 
 
 class State:
-    orig_context: str = ''  # all the files at the beginning of the search
-    context: str = None  # the orig_context concatenated with the current implementations from this state
-    mfs: List[MagicFunction]  # the magic functions with their original definitions and current implementations
-    tests: str = None  # the source code of the test class
-    errors: List[str]  # the errors we got from the tests
-    score: float  # the score for this solution
+    def __init__(self):
+        self.orig_context: str = ''  # all the files at the beginning of the search
+        self.context: str = None  # the orig_context concatenated with the current implementations from this state
+        self.mfs: List[MagicFunction] = None  # the magic functions with their original definitions and current implementations
+        self.tests: str = None  # the source code of the test class
+        self.errors: List[str] = []  # the errors we got from the tests
+        self.score: float = None  # the score for this solution
+        self.children: List['State'] = []
+        self.temperature: float = None
+        self.count = None
 
     def build_context(self):
         context = self.orig_context
@@ -24,14 +30,28 @@ class State:
         return context
 
     def __repr__(self):
-        return f'<{self.score}, {len(self.errors)}>'
+        return f'#{self.count}<{self.score}, {len(self.errors)}>'
+
+    def to_dict(self):
+        return {
+            'count': self.count,
+            'context': self.context,
+            'mfs': [mf.to_dict() for mf in self.mfs],
+            'tests': self.tests,
+            'errors': self.errors,
+            'score': self.score,
+            'temperature': self.temperature,
+            'children': [child.to_dict() for child in self.children]
+        }
 
 
-def generate_new_state(state: State, temperature: float, test_class) -> State:
+def generate_new_state(count, state: State, temperature: float, test_class) -> State:
     """Generates a new state for program space search"""
     new_state = State()
+    new_state.count = count
     new_state.tests = state.tests
     new_state.mfs = copy(state.mfs)
+    new_state.temperature = temperature
     resp_text, impls_dict = ai_call(state.mfs, state.context, state.tests, state.errors, temperature)
     if len(impls_dict) >= len(state.mfs):
         print(f'Received {len(impls_dict)} implementations, expected {len(state.mfs)}')
@@ -52,7 +72,7 @@ def generate_new_state(state: State, temperature: float, test_class) -> State:
     return new_state
 
 
-def start_search(mfs: List[MagicFunction], test_class: Type[TestCase]):
+def start_search(mfs: List[MagicFunction], test_class: Type[TestCase], display_tree=False):
     # Check all mfs are registerd
     for mf in mfs:
         assert mf in magic_functions, f'{mf} not registered with @unitai'
@@ -64,8 +84,10 @@ def start_search(mfs: List[MagicFunction], test_class: Type[TestCase]):
         clean_context += mf.clean_orig_code + '\n'
 
     # Run the tree search
-    states = search(mfs, test_class)
+    root, states = search(mfs, test_class)
     best_state = states[0]
+    if display_tree:
+        create_page_and_open_browser(root)
     return best_state
 
 
@@ -73,33 +95,38 @@ def search(mfs: List[MagicFunction], test_class: TestCase):
     random_spread = 2
     take_best_n = 3
     max_depth = 10
-    max_temperature = 0.3
+    max_temperature = 0.7
 
     # Generate the root state
-    state = State()
-    state.mfs = mfs
-    state.tests = inspect.getsource(test_class)
-    state.errors = []
-    state.score = -1  # root state has no score
+    root = State()
+    root.count = 0
+    root.mfs = mfs
+    root.tests = inspect.getsource(test_class)
+    root.errors = []
+    root.score = -1  # root state has no score
     # state.orig_context = orig_context # TODO
-    state.context = state.build_context()
-    states = [state]
+    root.context = root.build_context()
+    states = [root]
 
     found = False
+    count = 0
     for depth in range(max_depth):
         print('DEPTH', depth)
         new_states = []
         # For each state, generate a bunch of new states feeding back the current test errors
         for state in states:
             # Generate a bunch of rand temperatures, but always try temp=0
-            temperatures = [random() * max_temperature for _ in range(random_spread)]
+            # temperatures = [random() * max_temperature for _ in range(random_spread)]
+            temperatures = [up_to_03.pop(0) for _ in range(random_spread)]
             if depth == 0:
                 temperatures = [0.0] + temperatures  # always try temp=0 at first
 
             # Generate a bunch of new states: generate code with LLMs and run the tests to get the score
             for temp in temperatures:
                 print('TEMPERATURE', temp)
-                new_state = generate_new_state(state, temp, test_class)
+                count += 1
+                new_state = generate_new_state(count, state, temp, test_class)
+                state.children.append(new_state)
                 new_states.append(new_state)
                 if new_state.score == 1:
                     # Early quit
@@ -108,12 +135,13 @@ def search(mfs: List[MagicFunction], test_class: TestCase):
                     break
             if found: break
         states = states + new_states
+        states = sorted(states, key=lambda s: random())
         states.sort(key=lambda s: s.score, reverse=True)
         print('SCORES   ', [s for s in states], 'Picking the best', take_best_n)
         states = states[:take_best_n]
         print('SELECTED ', [s for s in states])
         if found: break
-    return states
+    return root, states
 
 
 def run_test_class(test_class) -> (List[str], float, float):

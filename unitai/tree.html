@@ -5,12 +5,25 @@
 <body>
 <script>
     const tree = __JSON_TREE__;
+
+    // if you click on any class="node" element, it will show
+    // the body
+    document.addEventListener('click', function (e) {
+        if (e.target.classList.contains('node')) {
+            const id = e.target.getAttribute('data-id');
+            const node = tree[id];
+            const body = node.body;
+            document.querySelector('div:last-child').innerHTML = body;
+        }
+    });
 </script>
 <div>
     __TREE__
 </div>
 <div>
     __MAIN__
+
+    Errors:
 </div>
 </body>
 </html>

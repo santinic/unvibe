@@ -1,11 +1,9 @@
 import re
-from pprint import pprint
-from typing import List, Dict, Tuple
-
 import ollama
 import redis
 import anthropic
-from termcolor import colored
+from typing import List, Dict, Tuple
+from pprint import pprint
 from openai import OpenAI
 from google import genai
 
@@ -20,7 +18,7 @@ def redis_cached(func):
     """redis memoization for functions"""
 
     def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)  # bypass
+        # return func(*args, **kwargs) # bypass
         key = f'{func.__name__}__{args}__{kwargs}'
         if redis_client.exists(key):
             print('Return from cache', key[:150] + '…')

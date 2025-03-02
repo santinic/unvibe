@@ -66,3 +66,10 @@ class MagicFunction:
         exec(imports, globals())  # run the imports
         exec(code)  # define the function
         return ___eval(f'{self.func_name}(*args, **kwargs)')  # then call it
+
+    def to_dict(self):
+        return {
+            'func_name': self.func_name,
+            'orig_code': self.orig_code,
+            'impl': self.impl
+        }

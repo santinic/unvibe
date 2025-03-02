@@ -49,7 +49,7 @@ class BasicTests(unittest.TestCase):
                 self.assertEqual(pitagoras(5, 12), 13)
                 self.assertEqual(pitagoras(7, 24), 25)
 
-        state = start_search([add, sqrt, exp], PitagorasTestClass)
+        state = start_search([add, sqrt, exp], PitagorasTestClass, display_tree=True)
         self.assertEqual(state.score, 1)
         self.assertEqual(len(state.errors), 0)
         self.assertEqual(len(state.mfs), 3)
