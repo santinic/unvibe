@@ -3,27 +3,96 @@
     <title>UnitAI Execution Report</title>
 </head>
 <body>
-<script>
-    const tree = __JSON_TREE__;
+<style>
+    body {
+        background-color: #505050;
+        color: #d9d8d8;
+    }
 
-    // if you click on any class="node" element, it will show
-    // the body
-    document.addEventListener('click', function (e) {
-        if (e.target.classList.contains('node')) {
-            const id = e.target.getAttribute('data-id');
-            const node = tree[id];
-            const body = node.body;
-            document.querySelector('div:last-child').innerHTML = body;
+    .node {
+        cursor: pointer;
+    }
+
+    textarea {
+        width: 800px;
+        height: 200px;
+        background-color: #2f2f2f;
+        color: #d9d8d8;
+    }
+</style>
+<script>
+    const root = __JSON_TREE__;
+
+    // Explore tree from root and create a tree hashmap by node.id
+    const treeMap = {};
+    const stack = [root];
+    while (stack.length > 0) {
+        const node = stack.pop();
+        treeMap[node.count] = node;
+        if (node.children) {
+            node.children.forEach((child) => {
+                stack.push(child);
+            });
         }
+    }
+    console.log(treeMap)
+
+    //             'count': self.count,
+    //         'context': self.context,
+    //         'mfs': [mf.to_dict() for mf in self.mfs],
+    //         'tests': self.tests,
+    //         'errors': self.errors,
+    //         'score': self.score,
+    //         'temperature': self.temperature,
+    //         'children': [child.to_dict() for child in self.children]
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const lis = [...document.getElementsByClassName('node')];
+        lis.forEach((li) => {
+            console.log(li)
+            li.addEventListener('click', (event) => {
+                const id = event.target.id;
+                const node = treeMap[id];
+                console.log(node);
+                const mainDiv = document.getElementById('main');
+                mainDiv.innerHTML = `
+                Count: ${node.count}<br/>
+                Temperature: ${node.temperature}<br/><br/>
+                Errors:<br/>
+                <textarea>${node.errors}</textarea>
+            `
+                const functionsDiv = document.getElementById('functions');
+                functionsDiv.innerHTML = '';
+                //    def __init__(self, orig_func: str):
+                // self.orig_func = orig_func
+                // self.orig_code = inspect.getsource(orig_func)
+                // self.func_name = orig_func.__name__
+                // self.impl = None
+                for (let i = 0; i < node.mfs.length; i++) {
+                    const mf = node.mfs[i];
+                    functionsDiv.innerHTML += `
+                    <div>
+                        <h3>Function: ${mf.func_name}</h3>
+                        <p>Original Code:</p>
+                        <textarea>${mf.orig_code}</textarea>
+                        <p>Implementation:</p>
+                        <textarea>${mf.impl}</textarea>
+                    </div>
+                `
+                }
+            });
+
+        });
     });
 </script>
-<div>
+<div style="float:left; min-width: 400px;">
     __TREE__
 </div>
-<div>
-    __MAIN__
-
-    Errors:
+<div style="float:left; margin-left: 20px;">
+    <div id="main" >
+        Click on a node to see details
+    </div>
+    <div id="functions"></div>
 </div>
 </body>
 </html>

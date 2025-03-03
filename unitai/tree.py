@@ -32,7 +32,7 @@ def create_page(root):
 def build_tree(root):
     html = '<ul>'
     for child in root.children:
-        html += '<li>' + str(child)
+        html += f'<li class="node" id="{child.count}">{str(child)}'
         if child.children:
             html += build_tree(child)
         html += '</li>'

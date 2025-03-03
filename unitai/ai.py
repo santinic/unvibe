@@ -167,7 +167,7 @@ def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> Tu
 
 Implement or Fix the functions: {func_names_str}
 '''
-    print('LLM PROMPT:', system + '\n' + prompt)
+    # print('LLM PROMPT:', system + '\n' + prompt)
     provider = config['ai']['provider']
     if provider == 'claude':
         resp_text = call_claude(system, prompt, temperature)
@@ -179,7 +179,7 @@ Implement or Fix the functions: {func_names_str}
         resp_text = call_ollama(system, prompt, temperature, model=config['ai']['model'])
     else:
         raise NotImplementedError(f'{provider} not implemented')
-
+    print(resp_text)
     implements_dict = parse_output(resp_text)
     return resp_text, implements_dict
 
@@ -188,5 +188,5 @@ def parse_output(t):
     # find anything between <implements name="..."> and </implement>
     found = re.findall(r'<implement name="(.+?)">(.*?)</implement>', t, re.DOTALL)
     found_dict = dict(found)
-    pprint(found_dict)
+    # pprint(found_dict)
     return found_dict

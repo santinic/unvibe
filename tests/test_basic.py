@@ -24,7 +24,7 @@ class BasicTests(unittest.TestCase):
         self.assertEqual(len(state.errors), 0)
         self.assertEqual(state.score, 1.0)
 
-    def test_three_functions(self):
+    def test_pitagora(self):
         @ai
         def add(a, b):
             """Implements addition."""
@@ -40,16 +40,16 @@ class BasicTests(unittest.TestCase):
             """Implements exponentiation x^a"""
             pass
 
-        def pitagoras(a, b):
+        def pitagora(a, b):
             return sqrt(add(exp(a, 2), exp(b, 2)))
 
-        class PitagorasTestClass(unittest.TestCase):
+        class PitagoraTestClass(unittest.TestCase):
             def test_pitagoras(self):
-                self.assertEqual(pitagoras(3, 4), 5)
-                self.assertEqual(pitagoras(5, 12), 13)
-                self.assertEqual(pitagoras(7, 24), 25)
+                self.assertEqual(pitagora(3, 4), 5)
+                self.assertEqual(pitagora(5, 12), 13)
+                self.assertEqual(pitagora(7, 24), 25)
 
-        state = start_search([add, sqrt, exp], PitagorasTestClass, display_tree=True)
+        state = start_search([add, sqrt, exp], PitagoraTestClass, display_tree=True)
         self.assertEqual(state.score, 1)
         self.assertEqual(len(state.errors), 0)
         self.assertEqual(len(state.mfs), 3)
@@ -153,14 +153,17 @@ class BasicTests(unittest.TestCase):
 
     def test_lisp_interpreter(self):
         @ai
-        def lisp(expr):
-            """Implements a simple lisp interpreter that uses Python's eval function."""
+        def lisp(exp):
+            """Implements a simple lisp interpreter. Use as many auxiliary functions as needed,
+            and don't worry: you can write long code if necessary."""
             pass
 
         class LispInterpreterTestClass(unittest.TestCase):
-            def test_arithmetics(self):
+            def test_calculator(self):
                 self.assertEqual(lisp("(+ 1 2)"), 3)
                 self.assertEqual(lisp("(* 2 3)"), 6)
+
+            def test_nested(self):
                 self.assertEqual(lisp("(* 2 (+ 1 2))"), 6)
                 self.assertEqual(lisp("(* (+ 1 2) (+ 3 4))"), 21)
 
@@ -171,14 +174,6 @@ class BasicTests(unittest.TestCase):
                 self.assertEqual(lisp("(range 3)"), [0, 1, 2])
                 self.assertEqual(lisp("(sum (list 1 2 3)"), 6)
 
-            # def test_import_math(self):
-            #     self.assertEqual(lisp("(import math)"), None)
-            #     self.assertEqual(lisp("(math.sqrt 4)"), 2)
-            #     self.assertEqual(lisp("(math.exp 2 3)"), 8)
-            #
-            # def test_import_json(self):
-            #     self.assertEqual(lisp("(import json)"), None)
-            #     self.assertEqual(lisp("(json.loads '{\"x\":1}')"), {"x": 1})
 
         state = start_search([lisp], LispInterpreterTestClass)
         self.assertGreater(state.score, 1)
@@ -200,8 +195,34 @@ class BasicTests(unittest.TestCase):
                 self.assertTrue(utils.is_palindrome('racecar'))
                 self.assertFalse(utils.is_palindrome('hello'))
 
-        state = start_search([Utils.is_palindrome], TestIsPalindrome)
+        state = start_search([Utils.is_palindrome], TestIsPalindrome, display_tree=True)
         self.assertEqual(state.score, 1)
         self.assertEqual(len(state.errors), 0)
         self.assertEqual(len(state.mfs), 1)
         self.assertIn(state.mfs[0].func_name, 'is_palindrome')
+
+    def test_bubble_sort(self):
+        @ai
+        def bubble_sort(l):
+            """Implements bubble sort, in pure Python, without using any library."""
+            pass
+
+        class TestBubbleSort(unittest.TestCase):
+            def test_bubble_sort(self):
+                self.assertEqual(bubble_sort([3, 2, 1]), [1, 2, 3])
+                self.assertEqual(bubble_sort([4, 2, 1, 3]), [1, 2, 3, 4])
+                self.assertEqual(bubble_sort([1, 2, 3, 4]), [1, 2, 3, 4])
+                self.assertEqual(bubble_sort([4, 3, 2, 1]), [1, 2, 3, 4])
+
+        state = start_search([bubble_sort], TestBubbleSort)
+        self.assertEqual(state.score, 1)
+        self.assertEqual(len(state.errors), 0)
+
+# def test_import_math(self):
+#     self.assertEqual(lisp("(import math)"), None)
+#     self.assertEqual(lisp("(math.sqrt 4)"), 2)
+#     self.assertEqual(lisp("(math.exp 2 3)"), 8)
+#
+# def test_import_json(self):
+#     self.assertEqual(lisp("(import json)"), None)
+#     self.assertEqual(lisp("(json.loads '{\"x\":1}')"), {"x": 1})

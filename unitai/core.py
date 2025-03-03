@@ -2,12 +2,14 @@ import re
 import inspect
 import unittest
 from copy import copy
+from pprint import pprint
 from random import random
 from typing import List, Type
 from unittest import TestCase
 
+
 from unitai import MagicFunction, ai_call, magic_functions, annotation_text
-from unitai.rand import up_to_03
+from unitai.rand import up_to_1
 from unitai.tree import create_page_and_open_browser
 
 
@@ -30,7 +32,7 @@ class State:
         return context
 
     def __repr__(self):
-        return f'#{self.count}<{self.score}, {len(self.errors)}>'
+        return f'#{self.count}<{self.score}, {len(self.errors)}, {self.temperature:.3f}>'
 
     def to_dict(self):
         return {
@@ -53,6 +55,8 @@ def generate_new_state(count, state: State, temperature: float, test_class) -> S
     new_state.mfs = copy(state.mfs)
     new_state.temperature = temperature
     resp_text, impls_dict = ai_call(state.mfs, state.context, state.tests, state.errors, temperature)
+    print(new_state)
+    pprint(impls_dict)
     if len(impls_dict) >= len(state.mfs):
         print(f'Received {len(impls_dict)} implementations, expected {len(state.mfs)}')
         for mf in new_state.mfs:
@@ -72,7 +76,7 @@ def generate_new_state(count, state: State, temperature: float, test_class) -> S
     return new_state
 
 
-def start_search(mfs: List[MagicFunction], test_class: Type[TestCase], display_tree=False):
+def start_search(mfs: List[MagicFunction], test_class: Type[TestCase], display_tree=True):
     # Check all mfs are registerd
     for mf in mfs:
         assert mf in magic_functions, f'{mf} not registered with @unitai'
@@ -101,6 +105,7 @@ def search(mfs: List[MagicFunction], test_class: TestCase):
     root = State()
     root.count = 0
     root.mfs = mfs
+    root.temperature = 0.0
     root.tests = inspect.getsource(test_class)
     root.errors = []
     root.score = -1  # root state has no score
@@ -117,7 +122,7 @@ def search(mfs: List[MagicFunction], test_class: TestCase):
         for state in states:
             # Generate a bunch of rand temperatures, but always try temp=0
             # temperatures = [random() * max_temperature for _ in range(random_spread)]
-            temperatures = [up_to_03.pop(0) for _ in range(random_spread)]
+            temperatures = [up_to_1.pop(0) for _ in range(random_spread)]
             if depth == 0:
                 temperatures = [0.0] + temperatures  # always try temp=0 at first
 

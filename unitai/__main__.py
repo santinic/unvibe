@@ -2,6 +2,9 @@ import argparse
 import sys
 from unittest import TestProgram
 
+from unitai import magic_functions
+from unitai.core import start_search
+
 epilog = '''examples:
   unitai src/ tests/                    # Uses every file in src/ and tests/ folders
   unitai src/main.py test/test_main.py  # Use only the indicated files
@@ -23,3 +26,6 @@ if __name__ == '__main__':
     args_for_unittest_main = sys.argv
     print(args_for_unittest_main)
     TestProgram(module=None, argv=args_for_unittest_main)
+
+
+    # def start_search(magic_functions, test_class)
