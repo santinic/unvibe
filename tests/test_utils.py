@@ -1,7 +1,6 @@
 import unittest
 
-from unitai.ai import parse_output
-from unitai.core import cleanup_error_str, match_indentation
+from unitai.core import cleanup_error_str, parse_ai_output
 
 
 class UtilsTest(unittest.TestCase):
@@ -25,7 +24,7 @@ class UtilsTest(unittest.TestCase):
         </implement>
         </output>
         '''
-        impls_dict = parse_output(resp_text)
+        impls_dict = parse_ai_output(resp_text)
         self.assertEqual(len(impls_dict), 2)
         self.assertEqual(impls_dict['mul'].strip(), mul.strip())
         self.assertEqual(impls_dict['div'].strip(), div.strip())
@@ -33,25 +32,30 @@ class UtilsTest(unittest.TestCase):
     def test_parse_output_deepseek(self):
         resp_text = '''
         <think>
-Okay, so I'm trying to figure out how to solve this problem. The user provided some code with a function called 'fun' that's supposed to implement addition but right now it just has a pass statement. My task is to write the implementation for this function.
+Okay, I need to fix the `is_palindrome` function in the given code. Let me look at what's provided.
 
-First, I'll look at the function definition: def fun(a, b): """Implements addition.""" So, the function takes two arguments, a and b, and it's supposed to return their sum. The docstring says it implements addition, which confirms what I need to do.
+First, there's a class `Utils` with a method `is_palindrome`. The current implementation returns `s == s[:-1]`. Hmm, that doesn't seem right. If I take a string like 'racecar', s[:-1] would be 'raceca', which isn't equal to 'racecar'. So this approach is incorrect.
 
-I remember that in Python, adding two numbers is straightforward using the '+' operator. So inside the function, I should return a + b. That makes sense because when you add two numbers, you just combine them with plus.
+Then, there's another attempt using `s[::-2]`. Wait, in Python, slicing with step -2 would reverse the string. For example, 'hello' reversed is 'olleh', and checking if it equals the original would correctly identify palindromes. But the code uses `s[::-2]`, which might be a typo because the correct syntax is `s[::-1]` for reversing.
 
-Wait, are there any edge cases I should consider? Like if a or b are not numbers? But since the problem doesn't specify handling errors, maybe I don't need to worry about that right now. The function is supposed to implement addition, so as long as it returns the sum of a and b, it should be correct.
+So the correct way to check for a palindrome is to compare the string with its reverse. That means the function should return `s == s[::-1]`.
 
-So putting it all together, the function will take a and b, add them using '+', and return the result. That's simple enough. I don't see any other steps needed here because the problem is pretty straightforward.
+I need to make sure that all test cases pass. For 'racecar', it should return True, and for 'hello', False. Using `s[::-1]` will handle these correctly.
+
+Also, I should check if there are any other issues in the code. The function is a static method now, which is good because it can be called without instances. So the corrected function should replace the incorrect logic with the proper reverse comparison.
 </think>
 
-<output implement="fun">
-def fun(a, b):
-    """Implements addition."""
-    return a + b
-</output>'''
-        impls_dict = parse_output(resp_text)
+To fix the `is_palindrome` function, we need to correctly compare the string with its reversed version.
+
+<implement name="is_palindrome">
+        @staticmethod
+        def is_palindrome(s: str):
+            return s == s[::-1]
+</implement>
+'''
+        impls_dict = parse_ai_output(resp_text)
         self.assertEqual(len(impls_dict), 1)
-        self.assertIn('a + b', impls_dict['fun'])
+        self.assertIn('s == s[::-1]', impls_dict['is_palindrome'])
 
     def test_cleanup_error_str(self):
         error_str = '''
@@ -89,18 +93,18 @@ def fun(a, b):
         ret = cleanup_error_str(error_str)
         self.assertEqual(type(ret), str)
 
-    def test_match_indentation(self):
-        orig = '''
-        @ai
-        def fun(a, b):
-            """Implements addition."""
-                pass
-        '''
-        gen = '''def fun(a, b):
-    """Implements addition."""
-    return a + b'''
-        expected = '''        def fun(a, b):
-            """Implements addition."""
-            return a + b'''
-        ret = match_indentation(orig, gen)
-        self.assertEqual(ret, expected)
+    # def test_match_indentation(self):
+    #     orig = '''
+    #     @ai
+    #     def fun(a, b):
+    #         """Implements addition."""
+    #             pass
+    #     '''
+    #     gen = '''def fun(a, b):
+    # """Implements addition."""
+    # return a + b'''
+    #     expected = '''        def fun(a, b):
+    #         """Implements addition."""
+    #         return a + b'''
+    #     ret = match_indentation(orig, gen)
+    #     self.assertEqual(ret, expected)

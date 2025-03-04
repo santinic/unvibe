@@ -152,7 +152,8 @@ system = ("- You only write code inside the <implement> tags.\n"
           "- Write all import inside functions.")
 
 
-def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> Tuple[str, Dict[str, str]]:
+def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> str:
+    # TODO: make use of tests
     assert context.strip() != '', 'Context should not be empty'
     func_names_str = ' '.join([mf.func_name for mf in mfs])
     errors_tag = ''
@@ -162,6 +163,9 @@ def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> Tu
 {example}
 <input>
 {context}
+
+{tests}
+
 {errors_tag}
 </input>
 
@@ -179,14 +183,4 @@ Implement or Fix the functions: {func_names_str}
         resp_text = call_ollama(system, prompt, temperature, model=config['ai']['model'])
     else:
         raise NotImplementedError(f'{provider} not implemented')
-    print(resp_text)
-    implements_dict = parse_output(resp_text)
-    return resp_text, implements_dict
-
-
-def parse_output(t):
-    # find anything between <implements name="..."> and </implement>
-    found = re.findall(r'<implement name="(.+?)">(.*?)</implement>', t, re.DOTALL)
-    found_dict = dict(found)
-    # pprint(found_dict)
-    return found_dict
+    return system + prompt, resp_text

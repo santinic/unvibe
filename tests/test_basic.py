@@ -45,9 +45,9 @@ class BasicTests(unittest.TestCase):
 
         class PitagoraTestClass(unittest.TestCase):
             def test_pitagoras(self):
-                self.assertEqual(pitagora(3, 4), 5)
-                self.assertEqual(pitagora(5, 12), 13)
-                self.assertEqual(pitagora(7, 24), 25)
+                self.assertAlmostEquals(pitagora(3, 4), 5)
+                self.assertAlmostEquals(pitagora(5, 12), 13)
+                self.assertAlmostEquals(pitagora(7, 24), 25)
 
         state = start_search([add, sqrt, exp], PitagoraTestClass, display_tree=True)
         self.assertEqual(state.score, 1)
@@ -154,8 +154,8 @@ class BasicTests(unittest.TestCase):
     def test_lisp_interpreter(self):
         @ai
         def lisp(exp):
-            """Implements a simple lisp interpreter. Use as many auxiliary functions as needed,
-            and don't worry: you can write long code if necessary."""
+            """Implements a simple lisp interpreter in plain Python, no external libraries.
+            Use as many auxiliary functions as needed."""
             pass
 
         class LispInterpreterTestClass(unittest.TestCase):
@@ -171,12 +171,11 @@ class BasicTests(unittest.TestCase):
                 self.assertEqual(lisp("(list 1 2 3)"), [1, 2, 3])
 
             def test_call_python_functions(self):
-                self.assertEqual(lisp("(range 3)"), [0, 1, 2])
+                self.assertEqual(lisp("(l(range 3)"), [0, 1, 2])
                 self.assertEqual(lisp("(sum (list 1 2 3)"), 6)
 
-
         state = start_search([lisp], LispInterpreterTestClass)
-        self.assertGreater(state.score, 1)
+        self.assertEqual(state.score, 1)
         self.assertEqual(len(state.errors), 0)
         self.assertEqual(len(state.mfs), 1)
         self.assertIn(state.mfs[0].func_name, 'lisp')

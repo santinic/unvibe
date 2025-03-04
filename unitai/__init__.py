@@ -5,7 +5,6 @@ from .ai import ai_call
 
 magic_functions = []
 config = None
-annotation_text = '@ai'
 
 TestCase = unitai_TestCase
 

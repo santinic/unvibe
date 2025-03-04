@@ -4,6 +4,8 @@ from typing import Callable
 
 from termcolor import colored
 
+annotation_text = '@ai'
+
 
 def as_short_code(code, max_len=150):
     short_code = code.replace('\n', ' ').strip()[:max_len] + '…'
@@ -27,7 +29,45 @@ def split_imports_and_code(impl):
     return imports, code
 
 
+def cleanup_implementation(code):
+    code = remove_indentation(code)
+    code = remove_annotation(code)
+    return code
+
+
+def remove_indentation(code):
+    lines = code.split('\n')
+    indent = ''
+    for line in lines:
+        if line.strip().startswith('def '):
+            indent = line.split('def ')[0]
+            break
+    ret = []
+    for line in lines:
+        ret.append(line.removeprefix(indent))
+    return '\n'.join(ret)
+
+
+def remove_annotation(code):
+    lines = code.split('\n')
+    found = None
+    for i, line in enumerate(lines):
+        if line.strip() == annotation_text:
+            found = i
+    if found:
+        lines.pop(found)
+        return '\n'.join(lines)
+    return code
+
+
 class MagicFunction:
+    """
+    This is a wrapper for the functions annotated with @ai.
+    You can swap the implementation of the MagicFunction and let the Unit-Tests invoke
+    the original function, but actually eval the implementation.
+    The search algorithm will create many different implementations and invoke
+    magic_function.set_impl(code) to set the implementation.
+    """
     orig_func: Callable
     orig_code: str
     clean_orig_code: str
@@ -35,17 +75,12 @@ class MagicFunction:
     def __init__(self, orig_func: str):
         self.orig_func = orig_func
         self.orig_code = inspect.getsource(orig_func)
+        self.clean_orig_code = self.orig_code.replace(annotation_text, '')  # remove @ai
         self.func_name = orig_func.__name__
         self.impl = None
 
     def set_impl(self, impl):
         self.impl = impl
-
-    def has_impl(self):
-        return self.impl is not None
-
-    def reset_impl(self):
-        self.impl = None
 
     def __repr__(self):
         short_code = as_short_code(self.orig_code)

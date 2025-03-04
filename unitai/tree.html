@@ -14,10 +14,17 @@
     }
 
     textarea {
-        width: 800px;
-        height: 200px;
+        width: 1100px;
+        height: 600px;
         background-color: #2f2f2f;
         color: #d9d8d8;
+        max-height: 600px;
+    }
+
+    pre {
+        font-family: monospace;
+        background-color: #2f2f2f;
+        max-width:70%;
     }
 </style>
 <script>
@@ -37,15 +44,6 @@
     }
     console.log(treeMap)
 
-    //             'count': self.count,
-    //         'context': self.context,
-    //         'mfs': [mf.to_dict() for mf in self.mfs],
-    //         'tests': self.tests,
-    //         'errors': self.errors,
-    //         'score': self.score,
-    //         'temperature': self.temperature,
-    //         'children': [child.to_dict() for child in self.children]
-
     document.addEventListener('DOMContentLoaded', () => {
         const lis = [...document.getElementsByClassName('node')];
         lis.forEach((li) => {
@@ -57,9 +55,14 @@
                 const mainDiv = document.getElementById('main');
                 mainDiv.innerHTML = `
                 Count: ${node.count}<br/>
+                Score: ${node.score}<br/>
                 Temperature: ${node.temperature}<br/><br/>
-                Errors:<br/>
-                <textarea>${node.errors}</textarea>
+                <h2>AI Prompt:</h2>
+                <textarea>${node.prompt}</textarea>
+                <h2>AI Output:</h2>
+                <textarea>${node.ai_output}</textarea>
+                <h2>Errors:</h2>
+                <pre>${node.errors}</pre>
             `
                 const functionsDiv = document.getElementById('functions');
                 functionsDiv.innerHTML = '';
@@ -68,15 +71,12 @@
                 // self.orig_code = inspect.getsource(orig_func)
                 // self.func_name = orig_func.__name__
                 // self.impl = None
-                for (let i = 0; i < node.mfs.length; i++) {
-                    const mf = node.mfs[i];
+                for(const [funcName, impl] of Object.entries(node.impls)) {
                     functionsDiv.innerHTML += `
                     <div>
-                        <h3>Function: ${mf.func_name}</h3>
-                        <p>Original Code:</p>
-                        <textarea>${mf.orig_code}</textarea>
+                        <h2>Function: ${funcName}</h2>
                         <p>Implementation:</p>
-                        <textarea>${mf.impl}</textarea>
+                        <textarea>${impl}</textarea>
                     </div>
                 `
                 }

@@ -4,6 +4,9 @@ import sys
 import time
 
 
+# timestamp = str(int(time.time())).replace('.', '')
+
+
 def create_page_and_open_browser(root):
     page_file = create_page(root)
     if sys.platform == 'darwin':
@@ -21,8 +24,8 @@ def create_page(root):
     tree_html = build_tree(root)
     template = template.replace('__TREE__', tree_html)
     template = template.replace('__JSON_TREE__', json.dumps(root.to_dict()))
-    timestamp = str(int(time.time())).replace('.', '')
-    report_file = f'tree_{timestamp}.html'
+    func_names = '_'.join([mf.func_name for mf in root.mfs])
+    report_file = f'tree_{func_names}.html'  # Use the same file for each run
     print(report_file)
     with open(report_file, 'w') as f:
         f.write(template)
