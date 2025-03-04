@@ -10,24 +10,60 @@ This approach has been demonstrated in research and in practice to produce
 much better results than simply using code-generation alone
 (see [Research Chapter](#research)).
 
+## Install
+
+Just add `unitai` as a dependency to your project:
+
+`pip install unitai`
+
 ## Example
+
+First define a new function in your existing Python project. Then annotate it with `@ai`: 
+Let's suppose this is in `lisp.py`:
 
 ```python
 from unitai import ai
 
 @ai
-def validate_email(email: str) -> bool:
-    """Validate """
+def lisp(expr: str) -> bool:
+    """A lisp interpreter in plain Python, don't use external libraries."""
     pass
-
-
 ```
 
-```
-$ python -m unitai test_validate_email.py
+Now, write a few unit-tests, for example in `test_list.py`, to define what the function should do:
+
+```python
+import unitai
+from lisp import lisp
+
+# You can also inherit unittest.TestCase, but unitai.TestCase provides a better reward function
+class LispInterpreterTestClass(unitai.TestCase):  
+    def test_calculator(self):
+        self.assertEqual(lisp("(+ 1 2)"), 3)
+        self.assertEqual(lisp("(* 2 3)"), 6)
+
+    def test_nested(self):
+        self.assertEqual(lisp("(* 2 (+ 1 2))"), 6)
+        self.assertEqual(lisp("(* (+ 1 2) (+ 3 4))"), 21)
+
+    def test_list(self):
+        self.assertEqual(lisp("(list 1 2 3)"), [1, 2, 3])
+
+    def test_call_python_functions(self):
+        self.assertEqual(lisp("(l(range 3)"), [0, 1, 2])
+        self.assertEqual(lisp("(sum (list 1 2 3)"), 6)
 ```
 
-The library will re-run the tests and generate many
+Now, let's use UnitAI to search for a valid implementation that passes all the tests:
+
+```
+$ python -m unitai test_lisp.py
+```
+
+The library will re-run the tests and generate many alternatives, and keep exploring the ones that pass
+more tests, while feeding back the test errors to the LLM. In the end you will find a new folder
+called `unitai_results_lisp/` with a valid implementation. If multiple valid implementations are found,
+you will find them in the folder.
 
 ## Setup & Configuration
 
@@ -37,18 +73,52 @@ $ pip install unitai
 
 Write in your project folder a `.unitai.json` config file.
 
-```json 
-{
-  "ai": {
-    "provider": "claude", // or "openai"
-    "api_key": "...",
-    "params": {
-      "model": "claude-3-5-sonnet-20240620", // or "gpt-3.5-turbo"
-      "max_tokens": 1000,
-      "temperature": 0
-    }
-  }
-}
+```toml 
+# For example, to use Claude:
+[ai]
+provider = "claude"
+api_key = "sk-..."
+model = "claude-3-5-haiku-latest"
+max_tokens = 5000
+
+# Or, to use a local Ollama:
+[ai]                                   
+provider = "ollama"            
+model = "deepseek-r1:8b" 
+host = "http://localhost:11434"
+
+# To use OpenAI or DeepSeek API:
+[ai]
+provider = "openai"
+base_url = "https://api.deepseek.com"
+api_key = "sk-..."
+temperature = 0.0
+max_tokens = 1024
+
+# To Use Gemini API:
+[ai]
+provider = "gemini"
+api_key = "..."
+model = "gemini-2.0-flash"
+
+# Advanced Parameters to tune the search: 
+[search]
+random_spread = 4       # How many random tries to make before selecting the best move.
+max_depth = 8           # Maximum depth of the search tree.
+max_temperature = 0.3   # UnitAI uses tries random temperature, up to this value.
+                        # Some models perform better at lower temps, in general
+                        # Higher temperature = more exploration
+
+# Cache may help save some money/time when re-running the same unit-tests.
+# If you don't want to use cache, comment out this section.
+[cache]
+provider = "redis"    
+host = "localhost"
+port = 6379
+password = ""
+db = 0
+expire = 604800
+
 ```
 
 ## Research
