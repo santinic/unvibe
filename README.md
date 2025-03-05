@@ -50,7 +50,7 @@ class LispInterpreterTestClass(unitai.TestCase):
         self.assertEqual(lisp("(list 1 2 3)"), [1, 2, 3])
 
     def test_call_python_functions(self):
-        self.assertEqual(lisp("(l(range 3)"), [0, 1, 2])
+        self.assertEqual(lisp("(list (range 3)"), [0, 1, 2])
         self.assertEqual(lisp("(sum (list 1 2 3)"), 6)
 ```
 

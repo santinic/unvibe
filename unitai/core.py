@@ -1,13 +1,14 @@
 import re
 import inspect
 import unittest
-from copy import copy
 from pprint import pprint
 from random import random
-from typing import List, Type, Dict
-from unittest import TestCase
+from typing import List, Type, Dict, Union
+from unittest import TestCase, TestSuite, TestLoader
 
+from unitai.config import config, config_get_or
 from unitai import MagicFunction, ai_call, magic_functions
+from unitai.log import log
 from unitai.magic import cleanup_implementation
 from unitai.rand import up_to_1
 from unitai.tree import create_page_and_open_browser
@@ -66,7 +67,7 @@ class State:
         }
 
 
-def generate_new_state(count, state: State, temperature: float, test_class) -> State:
+def generate_new_state(count, state: State, temperature: float, test_suite: TestSuite) -> State:
     """Generates a new state for program space search"""
     new_state = State()
     new_state.mfs = state.mfs
@@ -78,33 +79,35 @@ def generate_new_state(count, state: State, temperature: float, test_class) -> S
     new_state.ai_output = resp_text
     impls = parse_ai_output(resp_text)
     new_state.impls = impls
-    print(new_state)
+    log(new_state)
     pprint(impls)
     if len(impls) >= len(state.mfs):
-        print(f'Received {len(impls)} implementations, expected {len(state.mfs)}')
+        log(f'Received {len(impls)} implementations, expected {len(state.mfs)}')
         for mf in new_state.mfs:
             if mf.func_name in impls:
                 mf.set_impl(cleanup_implementation(impls[mf.func_name]))
             else:
                 raise f'Expected implementation for {mf.func_name}'
         new_state.context = new_state.build_context()
-        errors, errors_count, score = run_test_class(test_class)
+        errors, errors_count, score = run_tests(test_suite)
         # Reset implementations:
         for mf in new_state.mfs:
             mf.set_impl(None)
         new_state.errors = errors
         new_state.score = score
     else:
-        print('LLM OUTPUT:', resp_text)
+        log('LLM OUTPUT:', resp_text)
         new_state.score = 0
         expected_func_names = ','.join([mf.func_name for mf in new_state.mfs])
         received_func_names = ','.join([k for k, _ in impls.items()])
         new_state.errors = f'Expected implementations for {expected_func_names}. Received instead {received_func_names}'
-        print(new_state.errors)
+        log(new_state.errors)
     return new_state
 
 
-def start_search(mfs: List[MagicFunction], test_class: Type[TestCase], display_tree=True):
+def start_search(mfs: List[MagicFunction], test_suite: TestSuite, display_tree=True):
+    log('Using model', config['ai']['model'])
+
     # Check all mfs are registered
     for mf in mfs:
         assert mf in magic_functions, f'{mf} not registered with @unitai'
@@ -115,25 +118,39 @@ def start_search(mfs: List[MagicFunction], test_class: Type[TestCase], display_t
         clean_context += mf.clean_orig_code + '\n'
 
     # Run the tree search
-    root, states = search(mfs, test_class)
+    root, states = search(mfs, test_suite)
     best_state = states[0]
     if display_tree:
         create_page_and_open_browser(root)
     return best_state
 
 
-def search(mfs: List[MagicFunction], test_class: TestCase):
-    random_spread = 2
-    take_best_n = 3
-    max_depth = 10
-    max_temperature = 0.7
+def get_temperatures(depth):
+    random_spread = config_get_or('search', 'random_spread', 2)
+    random_type = config_get_or('search', 'random_type', 'increasing')
+    max_temperature = config_get_or('search', 'max_temperature', 0.7)
+
+    # Generate a bunch of rand temperatures, but always try temp=0
+    if random_type == 'increasing':
+        return [up_to_1.pop(0) for _ in range(random_spread)]
+    elif random_type == 'uniform':
+        return [random() * max_temperature for _ in range(random_spread)]
+    else:
+        raise f'Unknown random_type "{random_type}". Use either "increasing" or "uniform"'
+    if depth == 0:
+        return [0.0] + temperatures  # always try temp=0 at first
+
+
+def search(mfs: List[MagicFunction], test_suite: TestSuite):
+    take_best_n = config_get_or('search', 'take_best_n', 3)
+    max_depth = config_get_or('search', 'max_depth', 10)
 
     # Generate the root state
     root = State()
     root.count = 0
     root.mfs = mfs
     root.temperature = 0.0
-    root.tests = inspect.getsource(test_class)
+    root.tests = inspect.getsource(test_suite)
     root.errors = []
     root.score = -1  # root state has no score
     # state.orig_context = orig_context # TODO
@@ -143,50 +160,48 @@ def search(mfs: List[MagicFunction], test_class: TestCase):
     found = False
     count = 0
     for depth in range(max_depth):
-        print('DEPTH', depth)
+        log('Depth', depth)
         new_states = []
         # For each state, generate a bunch of new states feeding back the current test errors
         for state in states:
-            # Generate a bunch of rand temperatures, but always try temp=0
-            # temperatures = [random() * max_temperature for _ in range(random_spread)]
-            temperatures = [up_to_1.pop(0) for _ in range(random_spread)]
-            if depth == 0:
-                temperatures = [0.0] + temperatures  # always try temp=0 at first
-
             # Generate a bunch of new states: generate code with LLMs and run the tests to get the score
-            for temp in temperatures:
-                print('TEMPERATURE', temp)
+            for temp in get_temperatures(depth):
+                log('Temperature', temp)
                 count += 1
-                new_state = generate_new_state(count, state, temp, test_class)
+                new_state = generate_new_state(count, state, temp, test_suite)
                 state.children.append(new_state)
                 new_states.append(new_state)
                 if new_state.score == 1:
                     # Early quit
-                    print('Found perfect score')
+                    log('Found perfect score')
                     found = True
                     break
             if found: break
         states = states + new_states
         states = sorted(states, key=lambda s: random())
         states.sort(key=lambda s: s.score, reverse=True)
-        print('SCORES   ', [s for s in states], 'Picking the best', take_best_n)
+        log('Scores   ', [s for s in states], 'Picking the best', take_best_n)
         states = states[:take_best_n]
-        print('SELECTED ', [s for s in states])
+        log('Selected ', [s for s in states])
         create_page_and_open_browser(root)
         if found: break
     return root, states
 
 
-def run_test_class(test_class) -> (List[str], float, float):
-    suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+def run_tests(test_union: Union[TestSuite, TestCase]) -> (List[str], float, float):
+    if issubclass(test_union, TestCase):
+        # In case you pass just a TestCase (like in tests/), we create a TestSuite out of it:
+        test_suite = TestLoader().loadTestsFromTestCase(test_union)
+    else:
+        test_suite = test_union
     runner = unittest.TextTestRunner()
-    result = runner.run(suite)
+    result = runner.run(test_suite)
     if result.testsRun == 0:
-        raise f"Test class {test_class} has no tests."
+        raise f"Test class {test_suite} has no tests."
     errors_count = len(result.failures) + len(result.errors)
     score = 1 - errors_count / result.testsRun
     error_strings = []
-    for test_class, error_str in result.errors + result.failures:
+    for test_suite, error_str in result.errors + result.failures:
         error_strings.append(cleanup_error_str(error_str))
     return error_strings, errors_count, score
 

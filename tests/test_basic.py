@@ -1,3 +1,4 @@
+import traceback
 import unittest
 
 from unitai import ai, reset
@@ -7,6 +8,19 @@ from unitai.core import start_search
 class BasicTests(unittest.TestCase):
     def setUp(self):
         reset()
+
+    def base(self, functions, test_class, **kwargs):
+        try:
+            state = start_search(functions, test_class, **kwargs)
+        except Exception as exc:
+            traceback.print_exc()
+            raise exc
+        self.assertEqual(0, len(state.errors))
+        self.assertEqual(1.0, state.score)
+        self.assertEqual(len(state.mfs), len(functions))
+        self.assertEqual(set([f.func_name for f in functions]),
+                         set([mf.func_name for mf in state.mfs]))
+        return state
 
     def test_addition(self):
         @ai
@@ -20,9 +34,34 @@ class BasicTests(unittest.TestCase):
                 self.assertEqual(fun(1, 2), 3)
                 self.assertEqual(fun(2.4, 2.1), 4.5)
 
-        state = start_search([fun], AdditionTestClass)
-        self.assertEqual(len(state.errors), 0)
-        self.assertEqual(state.score, 1.0)
+        state = self.base([fun], AdditionTestClass)
+
+    def test_sqrt(self):
+        @ai
+        def sqrt(x):
+            """Implements sqrt with Newton's method"""
+            pass
+
+        import unittest
+
+        class SqrtTest(unittest.TestCase):
+            def test_sqrt_integer(self):
+                self.assertEqual(sqrt(4), 2)
+                self.assertEqual(sqrt(16), 4)
+                self.assertEqual(sqrt(25), 5)
+                self.assertEqual(sqrt(36), 6)
+
+            def test_sqrt_float(self):
+                self.assertEqual(sqrt(4.0), 2.0)
+                self.assertEqual(sqrt(16.0), 4.0)
+                self.assertEqual(sqrt(25.0), 5.0)
+                self.assertAlmostEquals(sqrt(46.4), 6.81, 2)
+
+            def test_sqrt_zero(self):
+                self.assertEqual(sqrt(0), 0)
+                self.assertEqual(sqrt(0.0), 0.0)
+
+        self.base([sqrt], SqrtTest, display_tree=True)
 
     def test_pitagora(self):
         @ai
@@ -49,10 +88,7 @@ class BasicTests(unittest.TestCase):
                 self.assertAlmostEquals(pitagora(5, 12), 13)
                 self.assertAlmostEquals(pitagora(7, 24), 25)
 
-        state = start_search([add, sqrt, exp], PitagoraTestClass, display_tree=True)
-        self.assertEqual(state.score, 1)
-        self.assertEqual(len(state.errors), 0)
-        self.assertEqual(len(state.mfs), 3)
+        state = self.base([add, sqrt, exp], PitagoraTestClass, display_tree=True)
         self.assertEqual(set([mf.func_name for mf in state.mfs]), set(['add', 'sqrt', 'exp']))
 
     @unittest.skip("Not implemented yet")
@@ -147,9 +183,7 @@ class BasicTests(unittest.TestCase):
                 expected = Complex(2, 3)
                 self.assertEqual(result, expected)
 
-        state = start_search([Complex], ComplexTestClass)
-        self.assertEqual(state.score, 1)
-        self.assertEqual(len(state.errors), 0)
+        state = self.base([Complex], ComplexTestClass)
 
     def test_lisp_interpreter(self):
         @ai
@@ -171,13 +205,10 @@ class BasicTests(unittest.TestCase):
                 self.assertEqual(lisp("(list 1 2 3)"), [1, 2, 3])
 
             def test_call_python_functions(self):
-                self.assertEqual(lisp("(l(range 3)"), [0, 1, 2])
+                self.assertEqual(lisp("(list (range 3)"), [0, 1, 2])
                 self.assertEqual(lisp("(sum (list 1 2 3)"), 6)
 
-        state = start_search([lisp], LispInterpreterTestClass)
-        self.assertEqual(state.score, 1)
-        self.assertEqual(len(state.errors), 0)
-        self.assertEqual(len(state.mfs), 1)
+        state = self.base([lisp], LispInterpreterTestClass)
         self.assertIn(state.mfs[0].func_name, 'lisp')
 
     def test_fix_wrong_impl_is_palindrome(self):
@@ -194,10 +225,7 @@ class BasicTests(unittest.TestCase):
                 self.assertTrue(utils.is_palindrome('racecar'))
                 self.assertFalse(utils.is_palindrome('hello'))
 
-        state = start_search([Utils.is_palindrome], TestIsPalindrome, display_tree=True)
-        self.assertEqual(state.score, 1)
-        self.assertEqual(len(state.errors), 0)
-        self.assertEqual(len(state.mfs), 1)
+        state = self.base([Utils.is_palindrome], TestIsPalindrome, display_tree=True)
         self.assertIn(state.mfs[0].func_name, 'is_palindrome')
 
     def test_bubble_sort(self):
@@ -213,9 +241,7 @@ class BasicTests(unittest.TestCase):
                 self.assertEqual(bubble_sort([1, 2, 3, 4]), [1, 2, 3, 4])
                 self.assertEqual(bubble_sort([4, 3, 2, 1]), [1, 2, 3, 4])
 
-        state = start_search([bubble_sort], TestBubbleSort)
-        self.assertEqual(state.score, 1)
-        self.assertEqual(len(state.errors), 0)
+        state = self.base([bubble_sort], TestBubbleSort)
 
 # def test_import_math(self):
 #     self.assertEqual(lisp("(import math)"), None)

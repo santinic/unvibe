@@ -5,7 +5,6 @@ from .ai import ai_call
 
 magic_functions = []
 config = None
-
 TestCase = unitai_TestCase
 
 
@@ -16,6 +15,6 @@ def reset():
 def ai(thing) -> MagicFunction:
     """The @ai annotation used on functions and classes"""
     mf = MagicFunction(thing)  # TODO: Implement also for classes
-    print(f'Adding {mf} to magic_functions')
+    print(f'[UnitAI] Adding {mf} to magic functions')
     magic_functions.append(mf)
     return mf
