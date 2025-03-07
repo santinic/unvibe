@@ -18,6 +18,6 @@ randoms = [
 #     0.3
 # ]
 
-up_to_1 = [i * 0.001 for i in range(1000)]
+up_to_1 = [i * 0.001 for i in range(1, 1000)]
 
 

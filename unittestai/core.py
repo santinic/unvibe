@@ -6,65 +6,15 @@ from random import random
 from typing import List, Type, Dict, Union
 from unittest import TestCase, TestSuite, TestLoader
 
-from unitai.config import config, config_get_or
-from unitai import MagicFunction, ai_call, magic_functions
-from unitai.log import log
-from unitai.magic import cleanup_implementation
-from unitai.rand import up_to_1
-from unitai.tree import create_page_and_open_browser
-
-
-class State:
-    orig_context: str  # all the files at the beginning of the search
-    context: str  # the orig_context concatenated with the current implementations from this state
-    prompt: str
-    ai_output: str
-    impls: Dict[str, str]  # For each function, the source-code implementation: func_name -> code implementation.
-    mfs: List[MagicFunction]  # the magic functions with their original definitions and "current" implementations
-    tests: str  # the source code of the test class
-    errors: List[str]  # the errors we got from the tests
-    score: float  # the score for this solution
-    children: List['State']
-    temperature: float = None
-    count = None
-
-    def __init__(self):
-        self.orig_context: str = ''
-        self.context: str = None
-        self.prompt: str = None
-        self.ai_output: str = None
-        self.impls: Dict[str, str] = {}
-        self.mfs: List[MagicFunction] = None
-        self.tests: str = None
-        self.errors: List[str] = []
-        self.score: float = None
-        self.children: List['State'] = []
-        self.temperature: float = None
-        self.count = None
-
-    def build_context(self):
-        context = self.orig_context
-        for mf in self.mfs:
-            context += (mf.impl if mf.impl is not None else mf.clean_orig_code) + '\n'
-        return context
-
-    def __repr__(self):
-        return f'#{self.count}<{self.score}, {len(self.errors)}, {self.temperature:.3f}>'
-
-    def to_dict(self):
-        return {
-            'count': self.count,
-            'context': self.context,
-            'prompt': self.prompt,
-            'ai_output': self.ai_output,
-            'impls': self.impls,
-            'mfs': [mf.to_dict() for mf in self.mfs],
-            'tests': self.tests,
-            'errors': self.errors,
-            'score': self.score,
-            'temperature': self.temperature,
-            'children': [child.to_dict() for child in self.children]
-        }
+import unittestai
+from unittestai.config import config, config_get_or
+from unittestai import MagicFunction, ai_call, magic_functions
+from unittestai.log import log
+from unittestai.magic import cleanup_implementation
+from unittestai.rand import up_to_1
+from unittestai.state import State
+from unittestai.suite import CountingTestSuite
+from unittestai.ui import make_bigtree, show_bigtree, create_page_and_open_browser
 
 
 def generate_new_state(count, state: State, temperature: float, test_suite: TestSuite) -> State:
@@ -79,7 +29,6 @@ def generate_new_state(count, state: State, temperature: float, test_suite: Test
     new_state.ai_output = resp_text
     impls = parse_ai_output(resp_text)
     new_state.impls = impls
-    log(new_state)
     pprint(impls)
     if len(impls) >= len(state.mfs):
         log(f'Received {len(impls)} implementations, expected {len(state.mfs)}')
@@ -89,12 +38,14 @@ def generate_new_state(count, state: State, temperature: float, test_suite: Test
             else:
                 raise f'Expected implementation for {mf.func_name}'
         new_state.context = new_state.build_context()
-        errors, errors_count, score = run_tests(test_suite)
+        errors, errors_count, passed_assertions, total_assertions, score = run_tests(test_suite)
+        new_state.passed_assertions = passed_assertions
+        new_state.total_assertions = total_assertions
+        new_state.errors = errors
+        new_state.score = score
         # Reset implementations:
         for mf in new_state.mfs:
             mf.set_impl(None)
-        new_state.errors = errors
-        new_state.score = score
     else:
         log('LLM OUTPUT:', resp_text)
         new_state.score = 0
@@ -121,13 +72,15 @@ def start_search(mfs: List[MagicFunction], test_suite: TestSuite, display_tree=T
     root, states = search(mfs, test_suite)
     best_state = states[0]
     if display_tree:
-        create_page_and_open_browser(root)
+        file = create_page_and_open_browser(root)
+        print(f'Created execution report {file}')
+    show_bigtree(root)
     return best_state
 
 
 def get_temperatures(depth):
     random_spread = config_get_or('search', 'random_spread', 2)
-    random_type = config_get_or('search', 'random_type', 'increasing')
+    random_type = config_get_or('search', 'random_type', 'uniform')
     max_temperature = config_get_or('search', 'max_temperature', 0.7)
 
     # Generate a bunch of rand temperatures, but always try temp=0
@@ -137,8 +90,8 @@ def get_temperatures(depth):
         return [random() * max_temperature for _ in range(random_spread)]
     else:
         raise f'Unknown random_type "{random_type}". Use either "increasing" or "uniform"'
-    if depth == 0:
-        return [0.0] + temperatures  # always try temp=0 at first
+    # if depth == 0:
+    return [0.0] + temperatures  # always try temp=0 at first
 
 
 def search(mfs: List[MagicFunction], test_suite: TestSuite):
@@ -188,23 +141,66 @@ def search(mfs: List[MagicFunction], test_suite: TestSuite):
     return root, states
 
 
-def run_tests(test_union: Union[TestSuite, TestCase]) -> (List[str], float, float):
+def run_tests(test_union: Union[TestSuite, TestCase]) -> (List[str], int, int, int, float):
     if issubclass(test_union, TestCase):
         # In case you pass just a TestCase (like in tests/), we create a TestSuite out of it:
-        test_suite = TestLoader().loadTestsFromTestCase(test_union)
+        loader = TestLoader()
+        loader.suiteClass = CountingTestSuite
+        test_suite = loader.loadTestsFromTestCase(test_union)
     else:
+        assert issubclass(test_union, CountingTestSuite), f'Expected CountingTestSuite or TestCase, got {test_union}'
         test_suite = test_union
     runner = unittest.TextTestRunner()
     result = runner.run(test_suite)
     if result.testsRun == 0:
         raise f"Test class {test_suite} has no tests."
     errors_count = len(result.failures) + len(result.errors)
-    score = 1 - errors_count / result.testsRun
+
+    # AdditionTestCase(unittest.TestCase)
+    # test_suite = <unittest.suite.TestSuite tests=[None]>
+    # test_suite.__class__ = <class 'unittest.suite.TestSuite'>
+    # test_suite._tests = [None]
+
+    # TestLispIntepreter(unitai.TestCase)
+    # issubclass(test_union, unitai.TestCase) => True
+    # test_suite = <unittest.suite.TestSuite tests=[None, None, None, None]>
+
+    # if issubclass(test_union, unitai.TestCase):
+    # We can count the assertions instead of just test passed tests
+
+    # if getattr(result, 'passed_assertions', None) is not None:
+    try:
+        if not test_suite.ai_test_case:
+            raise Exception()
+        total_passed_assertions = test_suite.total_passed_assertions
+        # TODO: qui bisogna leggere passed_assertions dal test_suite, perche' result.passed_assertions e'
+        # solo l'ultimo sub-test passato, non il totale
+        log('Using unitai.TestCase')
+        total_assertions = count_assertions(test_union)
+        log(f"Total assertions: {total_assertions}, Passed: {total_passed_assertions}")
+        if total_assertions == 0 or total_passed_assertions > total_assertions:
+            raise Exception()
+        score = total_passed_assertions / total_assertions
+    except Exception as exc:
+        # log('We recommend your test classes extend unitai.TestCase (instead of unittest.TestCase), for smoother scoring')
+        score = 1 - errors_count / result.testsRun
+        total_passed_assertions, total_assertions = None, None
     error_strings = []
     for test_suite, error_str in result.errors + result.failures:
         error_strings.append(cleanup_error_str(error_str))
-    return error_strings, errors_count, score
+    return error_strings, errors_count, total_passed_assertions, total_assertions, score
 
+
+def remove_lines_with(lines, is_target):
+    target_line = -1
+    for i, line in enumerate(lines):
+        if 'eval(' in line and '{self.func_name}' in line:
+            target_line = i
+            break
+    if target_line > 0:
+        # Remove the target line and those before and after:
+        lines = lines[:target_line - 1] + lines[target_line + 2:]
+    return lines
 
 def cleanup_error_str(error_str):
     # Remove every reference to the file path:
@@ -212,15 +208,8 @@ def cleanup_error_str(error_str):
     # Find the line with "eval" and "self.func_name":
     lines = error_str.split('\n')
 
-    # Remove reference to eval(...)
-    eval_line = -1
-    for i, line in enumerate(lines):
-        if 'eval(' in line and '{self.func_name}' in line:
-            eval_line = i
-            break
-    if eval_line > 0:
-        # Remove the line with eval(...) and those before and after:
-        lines = lines[:eval_line - 1] + lines[eval_line + 2:]
+    lines = remove_lines_with(lines, lambda line: 'eval(' in line and '{self.func_name}' in line)
+    lines = remove_lines_with(lines, lambda line: 'exec(code)' in line)
 
     # Put back together the redacted lines
     error_str = '\n'.join(lines)
@@ -232,6 +221,16 @@ def parse_ai_output(t: str) -> Dict:
     found = re.findall(r'<implement name="(.+?)">(.*?)</implement>', t, re.DOTALL)
     found_dict = dict(found)
     return found_dict
+
+
+def count_assertions(test_case: TestCase):
+    src = inspect.getsource(test_case)
+    lines = src.split('\n')
+    count = 0
+    for line in lines:
+        if 'self.assert' in line and not line.strip().startswith('#'):
+            count += 1
+    return count
 
 # def match_indentations(impl_dict: Dict, mfs: List[MagicFunction]) -> Dict:
 #     for mf in mfs:

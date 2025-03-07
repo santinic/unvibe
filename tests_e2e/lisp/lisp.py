@@ -1,4 +1,4 @@
-from unitai import ai
+from unittestai import ai
 
 
 @ai

@@ -13,6 +13,9 @@ from .config import config
 redis_client = redis.Redis(host=config['cache']['host'], port=config['cache']['port'], db=config['cache']['db'])
 redis_client.ping()
 
+total_input_tokens = 0
+total_output_tokens = 0
+
 
 def redis_cached(func):
     """redis memoization for functions"""
@@ -79,6 +82,12 @@ def call_claude(system, prompt, temperature):
         messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}]
     )
     # print('llm output:', message.content)
+    global total_input_tokens, total_output_tokens
+    total_input_tokens += message.usage.input_tokens
+    total_output_tokens += message.usage.output_tokens
+    input_tokens_cost_1M, output_tokens_cost_1M = 0.80, 4.00
+    cost = (total_input_tokens * input_tokens_cost_1M + total_output_tokens * output_tokens_cost_1M) / 1_000_000
+    print(f'Total input tokens: {total_input_tokens}, Total output tokens: {total_output_tokens}, Est. Cost: {cost}')
     return message.content[0].text
 
 
@@ -153,8 +162,7 @@ system = ("- You only write code inside the <implement> tags.\n"
 
 
 def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> str:
-    # TODO: make use of tests
-    assert context.strip() != '', 'Context should not be empty'
+    assert context.strip() != '', 'Context should not be empty' # TODO: Catch earlier
     func_names_str = ' '.join([mf.func_name for mf in mfs])
     errors_tag = ''
     if len(errors) > 0:

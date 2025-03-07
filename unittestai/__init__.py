@@ -1,11 +1,11 @@
-from unitai.TestCase import TestCase as unitai_TestCase
+from unittestai.suite import TestCase as MyTestCase
 
-from unitai.magic import MagicFunction
+from unittestai.magic import MagicFunction
 from .ai import ai_call
 
 magic_functions = []
 config = None
-TestCase = unitai_TestCase
+TestCase = MyTestCase
 
 
 def reset():

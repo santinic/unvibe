@@ -15,7 +15,17 @@ def read_config():
     print(f'Reading {file_path} config')
     with open(file_path, 'r') as file:
         config = tomllib.loads(file.read())
-        return config
+    check_config(config)
+    return config
+
+
+def check_config(config):
+    if 'ai' not in config:
+        raise f'Section [ai] not found in {config_file_name}. Please check documentation: {doc_url}'
+    if 'provider' not in config['ai']:
+        raise f'Key "provider" not found in [ai] section of {config_file_name}. Please check documentation: {doc_url}'
+    if 'model' not in config['ai']:
+        raise f'Key "model" not found in [ai] section of {config_file_name}. Please check documentation: {doc_url}'
 
 
 def config_get_or(section, key, default=None):

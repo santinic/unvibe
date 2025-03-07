@@ -1,5 +1,5 @@
 import unittest
-from unitai import TestCase as unitai_TestCase
+from unittestai import TestCase as unitai_TestCase
 
 
 class TestTestCase(unittest.TestCase):
@@ -19,4 +19,4 @@ class TestTestCase(unittest.TestCase):
             tc.assertFalse(True)
         except Exception:
             pass
-        self.assertEqual(tc._successes, 3)
+        self.assertEqual(tc.passed_assertions, 3)

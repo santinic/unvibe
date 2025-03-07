@@ -1,8 +1,9 @@
 import traceback
 import unittest
 
-from unitai import ai, reset
-from unitai.core import start_search
+import unittestai
+from unittestai import ai, reset
+from unittestai.core import start_search
 
 
 class BasicTests(unittest.TestCase):
@@ -28,7 +29,7 @@ class BasicTests(unittest.TestCase):
             """Implements addition."""
             pass
 
-        class AdditionTestClass(unittest.TestCase):
+        class AdditionTestClass(unittestai.TestCase):
             def test_addition(self):
                 self.assertEqual(fun(1, 1), 2)
                 self.assertEqual(fun(1, 2), 3)
@@ -44,7 +45,7 @@ class BasicTests(unittest.TestCase):
 
         import unittest
 
-        class SqrtTest(unittest.TestCase):
+        class SqrtTest(unittestai.TestCase):
             def test_sqrt_integer(self):
                 self.assertEqual(sqrt(4), 2)
                 self.assertEqual(sqrt(16), 4)
@@ -192,7 +193,7 @@ class BasicTests(unittest.TestCase):
             Use as many auxiliary functions as needed."""
             pass
 
-        class LispInterpreterTestClass(unittest.TestCase):
+        class LispInterpreterTestClass(unittestai.TestCase):
             def test_calculator(self):
                 self.assertEqual(lisp("(+ 1 2)"), 3)
                 self.assertEqual(lisp("(* 2 3)"), 6)
@@ -228,7 +229,7 @@ class BasicTests(unittest.TestCase):
         state = self.base([Utils.is_palindrome], TestIsPalindrome, display_tree=True)
         self.assertIn(state.mfs[0].func_name, 'is_palindrome')
 
-    def test_bubble_sort(self):
+    def test_bubble_sort_plain_unittest_TestCase(self):
         @ai
         def bubble_sort(l):
             """Implements bubble sort, in pure Python, without using any library."""

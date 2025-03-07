@@ -1,8 +1,8 @@
 import unittest
 
-from unitai import MagicFunction, ai
-from unitai.core import parse_ai_output
-from unitai.magic import remove_indentation, cleanup_implementation
+from unittestai import MagicFunction, ai
+from unittestai.core import parse_ai_output
+from unittestai.magic import remove_indentation, cleanup_implementation
 
 impl_dict = {
     'add': '\n'

@@ -3,8 +3,9 @@ import sys
 import unittest
 from unittest import TestSuite
 
-from unitai import magic_functions
-from unitai.core import start_search
+from unittestai import magic_functions
+from unittestai.core import start_search
+from unittestai.suite import CountingTestSuite
 
 epilog = '''examples:
   unitai src/ tests/                    # Uses every file in src/ and tests/ folders
@@ -31,7 +32,7 @@ def main():
 
     # Use Unittest library to find all the test classes in the given folder:
     test_loader = unittest.TestLoader()
-    # test_loader.testMethodPrefix = 'test'
+    test_loader.suiteClass = CountingTestSuite  # Count the passed assertions if possible
     test_suite: TestSuite = test_loader.discover(args.tests)
     print(f'{test_suite.countTestCases()} test cases found')
     start_search(magic_functions, test_suite)
