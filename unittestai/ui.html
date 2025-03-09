@@ -24,7 +24,7 @@
     pre {
         font-family: monospace;
         background-color: #2f2f2f;
-        max-width:70%;
+        max-width: 70%;
     }
 </style>
 <script>
@@ -52,6 +52,11 @@
                 const id = event.target.id;
                 const node = treeMap[id];
                 console.log(node);
+                let allErrors = '';
+                for (let i = 0; i < node.errors.length; i++) {
+                    const error = node.errors[i];
+                    allErrors += `######## ERROR ${i} ########\n\n${error}\n\n`;
+                }
                 const mainDiv = document.getElementById('main');
                 mainDiv.innerHTML = `
                 Count: ${node.count}<br/>
@@ -62,19 +67,19 @@
                 <h2>AI Output:</h2>
                 <textarea>${node.ai_output}</textarea>
                 <h2>Errors:</h2>
-                <pre>${node.errors}</pre>
+                <pre>${allErrors}</pre>
             `
-                const functionsDiv = document.getElementById('functions');
-                functionsDiv.innerHTML = '';
+                const entitiesDiv = document.getElementById('entities');
+                entitiesDiv.innerHTML = '';
                 //    def __init__(self, orig_func: str):
                 // self.orig_func = orig_func
                 // self.orig_code = inspect.getsource(orig_func)
                 // self.func_name = orig_func.__name__
                 // self.impl = None
-                for(const [funcName, impl] of Object.entries(node.impls)) {
-                    functionsDiv.innerHTML += `
+                for (const [entityName, impl] of Object.entries(node.impls)) {
+                    entitiesDiv.innerHTML += `
                     <div>
-                        <h2>Function: ${funcName}</h2>
+                        <h2>Entity: ${entityName}</h2>
                         <p>Implementation:</p>
                         <textarea>${impl}</textarea>
                     </div>
@@ -85,15 +90,18 @@
         });
     });
 </script>
-<h1>UnitAI Execution Report</h1>
+<h1>UnittestAI Execution Report</h1>
 <div style="float:left; min-width: 400px;">
     __TREE__
 </div>
 <div style="float:left; margin-left: 20px;">
-    <div id="main" >
+    <div id="main">
         Click on a node to see details
     </div>
-    <div id="functions"></div>
+    <div id="entities"></div>
+</div>
+<div style="padding:30px; margin-top:50px;">
+    <img src="__TREE_IMG__" style="max-width: 100%;"/>
 </div>
 </body>
 </html>

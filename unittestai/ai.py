@@ -158,12 +158,13 @@ system = ("- You only write code inside the <implement> tags.\n"
           "- Implement ONLY the requested functions! no wrappers, only the function.\n"
           "- If errors and implementation are already in the input, implement again fixing the errors.\n"
           "- Use as many <implement> as needed. Every function should be in it own <implement> tag.\n"
-          "- Write all import inside functions.")
+          "- Write all import inside functions."
+          "- On ModuleNotFoundError, try again without that module.")
 
 
 def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> str:
     assert context.strip() != '', 'Context should not be empty' # TODO: Catch earlier
-    func_names_str = ' '.join([mf.func_name for mf in mfs])
+    func_names_str = ' '.join([mf.name for mf in mfs])
     errors_tag = ''
     if len(errors) > 0:
         errors_tag = '<errors>\n' + '\n'.join(errors) + '</errors>'

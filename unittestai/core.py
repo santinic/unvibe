@@ -1,42 +1,42 @@
 import re
 import inspect
+import traceback
 import unittest
 from pprint import pprint
 from random import random
-from typing import List, Type, Dict, Union
+from typing import List, Dict, Union
 from unittest import TestCase, TestSuite, TestLoader
 
-import unittestai
 from unittestai.config import config, config_get_or
-from unittestai import MagicFunction, ai_call, magic_functions
+from unittestai import MagicFunction, ai_call, magic_entities
 from unittestai.log import log
-from unittestai.magic import cleanup_implementation
+from unittestai.magic import cleanup_implementation, MagicEntity
 from unittestai.rand import up_to_1
 from unittestai.state import State
 from unittestai.suite import CountingTestSuite
-from unittestai.ui import make_bigtree, show_bigtree, create_page_and_open_browser
+from unittestai.ui import create_page_and_open_browser
 
 
 def generate_new_state(count, state: State, temperature: float, test_suite: TestSuite) -> State:
     """Generates a new state for program space search"""
     new_state = State()
-    new_state.mfs = state.mfs
+    new_state.mes = state.mes
     new_state.count = count
     new_state.tests = state.tests
     new_state.temperature = temperature
-    prompt, resp_text = ai_call(state.mfs, state.context, state.tests, state.errors, temperature)
+    prompt, resp_text = ai_call(state.mes, state.context, state.tests, state.errors, temperature)
     new_state.prompt = prompt
     new_state.ai_output = resp_text
     impls = parse_ai_output(resp_text)
     new_state.impls = impls
     pprint(impls)
-    if len(impls) >= len(state.mfs):
-        log(f'Received {len(impls)} implementations, expected {len(state.mfs)}')
-        for mf in new_state.mfs:
-            if mf.func_name in impls:
-                mf.set_impl(cleanup_implementation(impls[mf.func_name]))
+    if len(impls) >= len(state.mes):
+        log(f'Received {len(impls)} implementations, expected {len(state.mes)}')
+        for me in new_state.mes:
+            if me.name in impls:
+                me.set_impl(cleanup_implementation(impls[me.name]))
             else:
-                raise f'Expected implementation for {mf.func_name}'
+                raise f'Expected implementation for {me.name}'
         new_state.context = new_state.build_context()
         errors, errors_count, passed_assertions, total_assertions, score = run_tests(test_suite)
         new_state.passed_assertions = passed_assertions
@@ -44,37 +44,36 @@ def generate_new_state(count, state: State, temperature: float, test_suite: Test
         new_state.errors = errors
         new_state.score = score
         # Reset implementations:
-        for mf in new_state.mfs:
-            mf.set_impl(None)
+        for me in new_state.mes:
+            me.set_impl(None)
     else:
         log('LLM OUTPUT:', resp_text)
         new_state.score = 0
-        expected_func_names = ','.join([mf.func_name for mf in new_state.mfs])
+        expected_func_names = ','.join([me.name for me in new_state.mes])
         received_func_names = ','.join([k for k, _ in impls.items()])
         new_state.errors = f'Expected implementations for {expected_func_names}. Received instead {received_func_names}'
         log(new_state.errors)
     return new_state
 
 
-def start_search(mfs: List[MagicFunction], test_suite: TestSuite, display_tree=True):
+def start_search(mes: List[MagicEntity], test_suite: TestSuite, display_tree=True):
     log('Using model', config['ai']['model'])
 
-    # Check all mfs are registered
-    for mf in mfs:
-        assert mf in magic_functions, f'{mf} not registered with @unitai'
+    # Check all magic entities are registered
+    for me in mes:
+        assert me in magic_entities, f'{me} not registered with @unitai'
 
     # Remove @ai annotations from the function implementation
     clean_context = ''
-    for mf in mfs:
-        clean_context += mf.clean_orig_code + '\n'
+    for me in mes:
+        clean_context += me.clean_orig_code + '\n'
 
     # Run the tree search
-    root, states = search(mfs, test_suite)
+    root, states = search(mes, test_suite)
     best_state = states[0]
     if display_tree:
         file = create_page_and_open_browser(root)
         print(f'Created execution report {file}')
-    show_bigtree(root)
     return best_state
 
 
@@ -94,14 +93,14 @@ def get_temperatures(depth):
     return [0.0] + temperatures  # always try temp=0 at first
 
 
-def search(mfs: List[MagicFunction], test_suite: TestSuite):
+def search(mes: List[MagicEntity], test_suite: TestSuite):
     take_best_n = config_get_or('search', 'take_best_n', 3)
     max_depth = config_get_or('search', 'max_depth', 10)
 
     # Generate the root state
     root = State()
     root.count = 0
-    root.mfs = mfs
+    root.mes = mes
     root.temperature = 0.0
     root.tests = inspect.getsource(test_suite)
     root.errors = []
@@ -192,15 +191,20 @@ def run_tests(test_union: Union[TestSuite, TestCase]) -> (List[str], int, int, i
 
 
 def remove_lines_with(lines, is_target):
-    target_line = -1
-    for i, line in enumerate(lines):
-        if 'eval(' in line and '{self.func_name}' in line:
-            target_line = i
-            break
-    if target_line > 0:
-        # Remove the target line and those before and after:
-        lines = lines[:target_line - 1] + lines[target_line + 2:]
-    return lines
+    try:
+        target_line = -1
+        for i, line in enumerate(lines):
+            if is_target(line):
+                target_line = i
+                break
+        if target_line >= 0:
+            # Remove the target line and those before and after:
+            lines = lines[:target_line - 1] + lines[target_line + 2:]
+        return lines
+    except Exception as e:
+        traceback.print_exc()
+        return lines
+
 
 def cleanup_error_str(error_str):
     # Remove every reference to the file path:
@@ -210,6 +214,7 @@ def cleanup_error_str(error_str):
 
     lines = remove_lines_with(lines, lambda line: 'eval(' in line and '{self.func_name}' in line)
     lines = remove_lines_with(lines, lambda line: 'exec(code)' in line)
+    lines = remove_lines_with(lines, lambda line: 'return ___eval(' in line)
 
     # Put back together the redacted lines
     error_str = '\n'.join(lines)
@@ -232,18 +237,21 @@ def count_assertions(test_case: TestCase):
             count += 1
     return count
 
-# def match_indentations(impl_dict: Dict, mfs: List[MagicFunction]) -> Dict:
-#     for mf in mfs:
-#         if mf.func_name in impl_dict:
-#             impl = impl_dict[mf.func_name]
-#             match_indentation(mf.orig_code, impl)
-#     return impl_dict
-#
-#
-# def match_indentation(orig, gen):
-#     orig_lines = orig.split('\n')
-#     for line in orig_lines:
-#         if 'def ' in line:
-#             indent = line.split('def ')[0]
-#     gen_lines = gen.split('\n')
-#     return '\n'.join([indent + line for line in gen_lines])
+
+def index_of_first_non_empty_char(line: str) -> int:
+    for i, c in enumerate(line):
+        if c != ' ':
+            return i
+    return -1
+
+
+def remove_extra_indentation(code: str):
+    lines = code.split('\n')
+    for line in lines:
+        i = index_of_first_non_empty_char(line)
+        if i >= 0:
+            break
+    ret = []
+    for line in lines:
+        ret.append(line[i:])
+    return '\n'.join(ret)

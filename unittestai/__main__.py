@@ -3,7 +3,7 @@ import sys
 import unittest
 from unittest import TestSuite
 
-from unittestai import magic_functions
+from unittestai import magic_entities
 from unittestai.core import start_search
 from unittestai.suite import CountingTestSuite
 
@@ -35,7 +35,7 @@ def main():
     test_loader.suiteClass = CountingTestSuite  # Count the passed assertions if possible
     test_suite: TestSuite = test_loader.discover(args.tests)
     print(f'{test_suite.countTestCases()} test cases found')
-    start_search(magic_functions, test_suite)
+    start_search(magic_entities, test_suite)
 
 
 if __name__ == '__main__':

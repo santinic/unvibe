@@ -1,7 +1,7 @@
 import unittest
 
 from unittestai import TestCase
-from unittestai.core import cleanup_error_str, parse_ai_output, run_tests, count_assertions
+from unittestai.core import cleanup_error_str, parse_ai_output, run_tests, count_assertions, remove_extra_indentation
 
 
 class CoreTest(unittest.TestCase):
@@ -125,6 +125,20 @@ class CoreTest(unittest.TestCase):
         self.assertNotIn('exec(code)', ret)
         self.assertNotIn('__call__', ret)
 
+    def test_cleanup_error_str_4(self):
+        error_str = '''
+        Traceback (most recent call last):
+  line 206, in test_list
+  line 111, in __call__
+    return ___eval(f'{self.name}(*args, **kwargs)')  # then call it
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  line 1, in <module>
+  line 13, in lisp
+UnboundLocalError: cannot access local variable 'parse_token' where it is not associated with a value
+        '''
+        ret = cleanup_error_str(error_str)
+        self.assertNotIn('__eval(', ret)
+        self.assertNotIn('^^^^^^^^^^^^^^^^^^^^', ret)
 
     # def test_match_indentation(self):
     #     orig = '''
@@ -141,7 +155,6 @@ class CoreTest(unittest.TestCase):
     #         return a + b'''
     #     ret = match_indentation(orig, gen)
     #     self.assertEqual(ret, expected)
-
 
     def test_count_assertions(self):
         def lisp():
@@ -164,3 +177,13 @@ class CoreTest(unittest.TestCase):
                 self.assertEqual(lisp("(sum (list 1 2 3)"), 6)
 
         self.assertEqual(count_assertions(LispInterpreterTestClass), 7)
+
+    def test_remove_extra_indentation(self):
+        code = '''
+        class Complex:
+            pass
+
+'''
+        fixed = remove_extra_indentation(code)
+        self.assertEqual(fixed.split('\n')[1], 'class Complex:')
+        self.assertEqual(fixed.split('\n')[2], '    pass')

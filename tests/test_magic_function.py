@@ -1,5 +1,6 @@
 import unittest
 
+import unittestai
 from unittestai import MagicFunction, ai
 from unittestai.core import parse_ai_output
 from unittestai.magic import remove_indentation, cleanup_implementation
