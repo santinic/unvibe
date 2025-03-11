@@ -4,7 +4,7 @@ from tests.SearchTest import SearchTest
 from unittestai import ai
 
 
-@unittest.skip("Skip this test")
+# @unittest.skip("Skip this test")
 class TestHard(SearchTest):
     def test_complex_class(self):
         @ai

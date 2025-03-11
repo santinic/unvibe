@@ -104,12 +104,3 @@ class BasicTests(SearchTest):
                 self.assertEqual(bubble_sort([4, 3, 2, 1]), [1, 2, 3, 4])
 
         state = self.base([bubble_sort], TestBubbleSort)
-
-# def test_import_math(self):
-#     self.assertEqual(lisp("(import math)"), None)
-#     self.assertEqual(lisp("(math.sqrt 4)"), 2)
-#     self.assertEqual(lisp("(math.exp 2 3)"), 8)
-#
-# def test_import_json(self):
-#     self.assertEqual(lisp("(import json)"), None)
-#     self.assertEqual(lisp("(json.loads '{\"x\":1}')"), {"x": 1})

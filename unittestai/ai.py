@@ -159,7 +159,8 @@ system = ("- You only write code inside the <implement> tags.\n"
           "- If errors and implementation are already in the input, implement again fixing the errors.\n"
           "- Use as many <implement> as needed. Every function should be in it own <implement> tag.\n"
           "- Write all import inside functions."
-          "- If you encounter ModuleNotFoundError, try to make do without that module.")
+          "- If you encounter ModuleNotFoundError, try to make do without that module."
+          "- Don't change the unit-tests, only the implementation.\n")
 
 
 def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> str:

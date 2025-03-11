@@ -29,8 +29,8 @@ class State:
         self.tests: str = None
         self.errors: List[str] = []
         self.score: float = None
-        self.passed_assertions: int = None
-        self.total_assertions: int = None
+        self.passed_assertions: int = 0
+        self.total_assertions: int = 0
         self.children: List['State'] = []
         self.temperature: float = None
         self.count = None
