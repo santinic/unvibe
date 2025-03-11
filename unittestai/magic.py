@@ -1,5 +1,9 @@
 import inspect
 import re
+import sys
+import traceback
+from typing import Union, Type
+
 from termcolor import colored
 
 annotation_text = '@ai'
@@ -34,18 +38,19 @@ def split_imports_and_code(impl):
     return imports, code
 
 
-def cleanup_implementation(code):
-    code = remove_indentation(code)
+def cleanup_implementation(code, cls: Union[Type['MagicFunction'], Type['MagicClass']]):
+    code = remove_indentation(code, cls)
     code = remove_annotation(code)
     return code
 
 
-def remove_indentation(code):
+def remove_indentation(code, cls):
     lines = code.split('\n')
     indent = ''
+    first_def = 'class ' if cls == MagicClass else 'def '
     for line in lines:
-        if line.strip().startswith('def '):
-            indent = line.split('def ')[0]
+        if line.strip().startswith(first_def):
+            indent = line.split(first_def)[0]
             break
     ret = []
     for line in lines:
@@ -106,8 +111,15 @@ class MagicFunction(MagicEntity):
 
         imports, code = split_imports_and_code(self.impl)
         ___eval = eval
-        exec(imports, globals())  # run the imports
-        exec(code, globals())  # define the function
+        try:
+            exec(imports, globals())  # run the imports
+            exec(code, globals())  # define the function
+        except IndentationError as exc:
+            traceback.print_exc()
+            print('IndentationError produced with:')
+            print('Imports:', imports)
+            print('Code:', code)
+            sys.exit(1)
         return ___eval(f'{self.name}(*args, **kwargs)')  # then call it
 
 

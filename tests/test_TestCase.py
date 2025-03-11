@@ -1,12 +1,13 @@
 import unittest
-from unittestai import TestCase as unitai_TestCase
+
+import unittestai
 
 
 class TestTestCase(unittest.TestCase):
     """Some inception going on here"""
 
     def test_wraps_and_count(self):
-        tc = unitai_TestCase()
+        tc = unittestai.TestCase()
         tc.assertEqual(1, 1)
         tc.assertTrue(True)
         tc.assertGreater(2, 1)

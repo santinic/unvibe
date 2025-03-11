@@ -1,5 +1,5 @@
-import re
 import inspect
+import re
 import traceback
 import unittest
 from pprint import pprint
@@ -7,8 +7,8 @@ from random import random
 from typing import List, Dict, Union
 from unittest import TestCase, TestSuite, TestLoader
 
+from unittestai import ai_call, magic_entities
 from unittestai.config import config, config_get_or
-from unittestai import MagicFunction, ai_call, magic_entities
 from unittestai.log import log
 from unittestai.magic import cleanup_implementation, MagicEntity
 from unittestai.rand import up_to_1
@@ -24,6 +24,9 @@ def generate_new_state(count, state: State, temperature: float, test_suite: Test
     new_state.count = count
     new_state.tests = state.tests
     new_state.temperature = temperature
+    if state.context.strip() == '':
+        log('Context is empty, skipping state')
+        return None
     prompt, resp_text = ai_call(state.mes, state.context, state.tests, state.errors, temperature)
     new_state.prompt = prompt
     new_state.ai_output = resp_text
@@ -34,7 +37,8 @@ def generate_new_state(count, state: State, temperature: float, test_suite: Test
         log(f'Received {len(impls)} implementations, expected {len(state.mes)}')
         for me in new_state.mes:
             if me.name in impls:
-                me.set_impl(cleanup_implementation(impls[me.name]))
+                cleaned_up = cleanup_implementation(impls[me.name], me.__class__)
+                me.set_impl(cleaned_up)
             else:
                 raise f'Expected implementation for {me.name}'
         new_state.context = new_state.build_context()
@@ -51,8 +55,9 @@ def generate_new_state(count, state: State, temperature: float, test_suite: Test
         new_state.score = 0
         expected_func_names = ','.join([me.name for me in new_state.mes])
         received_func_names = ','.join([k for k, _ in impls.items()])
-        new_state.errors = f'Expected implementations for {expected_func_names}. Received instead {received_func_names}'
+        new_state.errors = [f'Expected implementations for {expected_func_names}. Received instead [{received_func_names}]']
         log(new_state.errors)
+        return None
     return new_state
 
 
@@ -77,9 +82,9 @@ def start_search(mes: List[MagicEntity], test_suite: TestSuite, display_tree=Tru
     return best_state
 
 
-def get_temperatures(depth):
+def get_temperatures():
     random_spread = config_get_or('search', 'random_spread', 2)
-    random_type = config_get_or('search', 'random_type', 'uniform')
+    random_type = config_get_or('search', 'random_type', 'increasing')
     max_temperature = config_get_or('search', 'max_temperature', 0.7)
 
     # Generate a bunch of rand temperatures, but always try temp=0
@@ -89,7 +94,6 @@ def get_temperatures(depth):
         return [random() * max_temperature for _ in range(random_spread)]
     else:
         raise f'Unknown random_type "{random_type}". Use either "increasing" or "uniform"'
-    # if depth == 0:
     return [0.0] + temperatures  # always try temp=0 at first
 
 
@@ -117,10 +121,12 @@ def search(mes: List[MagicEntity], test_suite: TestSuite):
         # For each state, generate a bunch of new states feeding back the current test errors
         for state in states:
             # Generate a bunch of new states: generate code with LLMs and run the tests to get the score
-            for temp in get_temperatures(depth):
+            for temp in get_temperatures():
                 log('Temperature', temp)
                 count += 1
                 new_state = generate_new_state(count, state, temp, test_suite)
+                if state is None:
+                    continue
                 state.children.append(new_state)
                 new_states.append(new_state)
                 if new_state.score == 1:

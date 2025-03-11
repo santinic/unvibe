@@ -39,7 +39,7 @@ def create_html_page(root):
 def build_html_tree(root):
     html = '<ul>'
     for child in root.children:
-        html += f'<li class="node" id="{child.count}">{str(child)}'
+        html += f'<li><span class="node" id="{child.count}">{str(child)}</span>'
         if child.children:
             html += build_html_tree(child)
         html += '</li>'

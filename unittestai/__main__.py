@@ -8,8 +8,8 @@ from unittestai.core import start_search
 from unittestai.suite import CountingTestSuite
 
 epilog = '''examples:
-  unitai src/ tests/                    # Uses every file in src/ and tests/ folders
-  unitai src/main.py test/test_main.py  # Use only the indicated files
+  unittestai src/ tests/                    # Uses every file in src/ and tests/ folders
+  unittestai src/main.py test/test_main.py  # Use only the indicated files
 '''
 
 

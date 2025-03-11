@@ -1,7 +1,8 @@
 import unittest
 
-from unittestai import TestCase
+from unittestai import TestCase, MagicFunction, ai
 from unittestai.core import cleanup_error_str, parse_ai_output, run_tests, count_assertions, remove_extra_indentation
+from unittestai.magic import cleanup_implementation, MagicClass
 
 
 class CoreTest(unittest.TestCase):
@@ -187,3 +188,93 @@ UnboundLocalError: cannot access local variable 'parse_token' where it is not as
         fixed = remove_extra_indentation(code)
         self.assertEqual(fixed.split('\n')[1], 'class Complex:')
         self.assertEqual(fixed.split('\n')[2], '    pass')
+
+    def test_ai_output_cleanup_magic_class(self):
+        ai_output = '''
+<implement name="Complex">
+class Complex:
+    def __init__(self, real=0, imag=0):
+        self.real = real
+        self.imag = imag
+    
+    def __str__(self):
+        if self.imag >= 0:
+            return f"{self.real}+{abs(self.imag)}j"
+        else:
+            return f"{self.real}{self.imag}j"
+
+    def __add__(self, other):
+        if isinstance(other, Complex):
+            real = self.real + other.real
+            imag = self.imag + other.imag
+            return Complex(real, imag)
+        elif isinstance(other, (int, float)):
+            real = self.real + other
+            imag = self.imag
+            return Complex(real, imag)
+        else:
+            raise TypeError("Unsupported operand type for +")
+
+    def __sub__(self, other):
+        if isinstance(other, Complex):
+            real = self.real - other.real
+            imag = self.imag - other.imag
+            return Complex(real, imag)
+        elif isinstance(other, (int, float)):
+            real = self.real - other
+            imag = self.imag
+            return Complex(real, imag)
+        else:
+            raise TypeError("Unsupported operand type for -")
+
+    def __mul__(self, other):
+        if isinstance(other, Complex):
+            real = (self.real * other.real) - (self.imag * other.imag)
+            imag = (self.real * other.imag) + (self.imag * other.real)
+            return Complex(real, imag)
+        elif isinstance(other, (int, float)):
+            real = self.real * other
+            imag = self.imag * other
+            return Complex(real, imag)
+        else:
+            raise TypeError("Unsupported operand type for *")
+
+    def __truediv__(self, other):
+        if isinstance(other, Complex):
+            denominator = other.real**2 + other.imag**2
+            real = (self.real * other.real + self.imag * other.imag) / denominator
+            imag = (self.imag * other.real - self.real * other.imag) / denominator
+            return Complex(real, imag)
+        elif isinstance(other, (int, float)):
+            if other == 0:
+                raise ZeroDivisionError("Cannot divide by zero")
+            real = self.real / other
+            imag = self.imag / other
+            return Complex(real, imag)
+        else:
+            raise TypeError("Unsupported operand type for /")
+
+    def conj(self):
+        return Complex(self.real, -self.imag)
+
+    @staticmethod
+    def abs(c):
+        if isinstance(c, Complex):
+            return (c.real**2 + c.imag**2)**0.5
+        elif isinstance(c, (int, float)):
+            return abs(c)
+        else:
+            raise TypeError("Unsupported operand type for abs")
+
+</implement>
+        '''
+
+        @ai
+        class Complex:
+            pass
+
+        impls = parse_ai_output(ai_output)
+        Complex.set_impl(cleanup_implementation(impls['Complex'], MagicClass))
+        lines = Complex.impl.split('\n')
+        self.assertEqual(lines[1], 'class Complex:')
+        self.assertEqual(lines[2], '    def __init__(self, real=0, imag=0):')

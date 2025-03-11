@@ -173,4 +173,5 @@ cython_debug/
 .idea
 .unitai.json
 .unitai.toml
+.unittestai.toml
 tree_*.html

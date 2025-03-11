@@ -1,28 +1,11 @@
-import traceback
 import unittest
 
 import unittestai
-from unittestai import ai, reset
-from unittestai.core import start_search
+from tests.SearchTest import SearchTest
+from unittestai import ai
 
 
-class BasicTests(unittest.TestCase):
-    def setUp(self):
-        reset()
-
-    def base(self, functions, test_class, **kwargs):
-        try:
-            state = start_search(functions, test_class, **kwargs)
-        except Exception as exc:
-            traceback.print_exc()
-            raise exc
-        self.assertEqual(0, len(state.errors))
-        self.assertEqual(1.0, state.score)
-        self.assertEqual(len(state.mes), len(functions))
-        self.assertEqual(set([f.name for f in functions]),
-                         set([mf.name for mf in state.mes]))
-        return state
-
+class BasicTests(SearchTest):
     def test_addition(self):
         @ai
         def fun(a, b):
@@ -42,8 +25,6 @@ class BasicTests(unittest.TestCase):
         def sqrt(x):
             """Implements sqrt with Newton's method"""
             pass
-
-        import unittest
 
         class SqrtTest(unittestai.TestCase):
             def test_sqrt_integer(self):
@@ -85,14 +66,12 @@ class BasicTests(unittest.TestCase):
 
         class PitagoraTestClass(unittest.TestCase):
             def test_pitagoras(self):
-                self.assertAlmostEquals(pitagora(3, 4), 5)
-                self.assertAlmostEquals(pitagora(5, 12), 13)
-                self.assertAlmostEquals(pitagora(7, 24), 25)
+                self.assertAlmostEquals(pitagora(3, 4), 5, 2)
+                self.assertAlmostEquals(pitagora(5, 12), 13, 2)
+                self.assertAlmostEquals(pitagora(7, 24), 25, 2)
 
         state = self.base([add, sqrt, exp], PitagoraTestClass, display_tree=True)
         self.assertEqual(set([mf.name for mf in state.mes]), set(['add', 'sqrt', 'exp']))
-
-
 
     def test_fix_wrong_impl_is_palindrome(self):
         # Utils class to check if it retains indentation

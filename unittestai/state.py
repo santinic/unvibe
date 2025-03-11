@@ -13,6 +13,8 @@ class State:
     tests: str  # the source code of the test class
     errors: List[str]  # the errors we got from the tests
     score: float  # the score for this solution
+    passed_assertions: int
+    total_assertions: int
     children: List['State']
     temperature: float = None
     count = None
@@ -27,6 +29,8 @@ class State:
         self.tests: str = None
         self.errors: List[str] = []
         self.score: float = None
+        self.passed_assertions: int = None
+        self.total_assertions: int = None
         self.children: List['State'] = []
         self.temperature: float = None
         self.count = None
@@ -51,6 +55,8 @@ class State:
             'tests': self.tests,
             'errors': self.errors,
             'score': self.score,
+            'passed_assertions': self.passed_assertions,
+            'total_assertions': self.total_assertions,
             'temperature': self.temperature,
             'children': [child.to_dict() for child in self.children]
         }
