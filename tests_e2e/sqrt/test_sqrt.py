@@ -1,7 +1,8 @@
-import unittest
+import unittestai
+from tests_e2e.sqrt.sqrt import sqrt
 
 
-class SqrtTest(unittest.TestCase):
+class SqrtTest(unittestai.TestCase):
     def test_sqrt_integer(self):
         self.assertEqual(sqrt(4), 2)
         self.assertEqual(sqrt(16), 4)

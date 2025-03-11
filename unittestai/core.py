@@ -1,23 +1,22 @@
-import inspect
 import re
+import sys
 import traceback
 import unittest
 from pprint import pprint
 from random import random
-from typing import List, Dict, Union
-from unittest import TestCase, TestSuite, TestLoader
+from typing import List, Dict
 
 from unittestai import ai_call, magic_entities
+from unittestai.TestsContainer import TestsContainer
 from unittestai.config import config, config_get_or
 from unittestai.log import log
 from unittestai.magic import cleanup_implementation, MagicEntity
 from unittestai.rand import up_to_1
 from unittestai.state import State
-from unittestai.suite import CountingTestSuite
 from unittestai.ui import create_page_and_open_browser
 
 
-def generate_new_state(count, state: State, temperature: float, test_suite: TestSuite) -> State:
+def generate_new_state(count, state: State, temperature: float, tests_container: TestsContainer) -> State:
     """Generates a new state for program space search"""
     new_state = State()
     new_state.mes = state.mes
@@ -25,9 +24,11 @@ def generate_new_state(count, state: State, temperature: float, test_suite: Test
     new_state.tests = state.tests
     new_state.temperature = temperature
     if state.context.strip() == '':
-        log('Context is empty, skipping state')
-        return None
-    prompt, resp_text = ai_call(state.mes, state.context, state.tests, state.errors, temperature)
+        log(state)
+        log('Context is empty?')
+        sys.exit(1)
+    first_error = [state.errors[0]] if len(state.errors) > 0 else []
+    prompt, resp_text = ai_call(state.mes, state.context, state.tests, first_error, temperature)
     new_state.prompt = prompt
     new_state.ai_output = resp_text
     impls = parse_ai_output(resp_text)
@@ -42,7 +43,7 @@ def generate_new_state(count, state: State, temperature: float, test_suite: Test
             else:
                 raise f'Expected implementation for {me.name}'
         new_state.context = new_state.build_context()
-        errors, errors_count, passed_assertions, total_assertions, score = run_tests(test_suite)
+        errors, errors_count, passed_assertions, total_assertions, score = run_tests(tests_container)
         new_state.passed_assertions = passed_assertions
         new_state.total_assertions = total_assertions
         new_state.errors = errors
@@ -54,14 +55,13 @@ def generate_new_state(count, state: State, temperature: float, test_suite: Test
         log('LLM OUTPUT:', resp_text)
         new_state.score = 0
         expected_func_names = ','.join([me.name for me in new_state.mes])
-        received_func_names = ','.join([k for k, _ in impls.items()])
-        new_state.errors = [f'Expected implementations for {expected_func_names}. Received instead [{received_func_names}]']
+        new_state.errors = [f'Expected implementations for {expected_func_names}.\n'
+                            f'Did you use <implement name="..."> ? Try again.']
         log(new_state.errors)
-        return None
     return new_state
 
 
-def start_search(mes: List[MagicEntity], test_suite: TestSuite, display_tree=True):
+def start_search(mes: List[MagicEntity], tests_container: TestsContainer, display_tree=True):
     log('Using model', config['ai']['model'])
 
     # Check all magic entities are registered
@@ -74,7 +74,7 @@ def start_search(mes: List[MagicEntity], test_suite: TestSuite, display_tree=Tru
         clean_context += me.clean_orig_code + '\n'
 
     # Run the tree search
-    root, states = search(mes, test_suite)
+    root, states = search(mes, tests_container)
     best_state = states[0]
     if display_tree:
         file = create_page_and_open_browser(root)
@@ -84,7 +84,7 @@ def start_search(mes: List[MagicEntity], test_suite: TestSuite, display_tree=Tru
 
 def get_temperatures():
     random_spread = config_get_or('search', 'random_spread', 2)
-    random_type = config_get_or('search', 'random_type', 'increasing')
+    random_type = config_get_or('search', 'random_type', 'uniform')
     max_temperature = config_get_or('search', 'max_temperature', 0.7)
 
     # Generate a bunch of rand temperatures, but always try temp=0
@@ -97,7 +97,7 @@ def get_temperatures():
     return [0.0] + temperatures  # always try temp=0 at first
 
 
-def search(mes: List[MagicEntity], test_suite: TestSuite):
+def search(mes: List[MagicEntity], test_container: TestsContainer):
     take_best_n = config_get_or('search', 'take_best_n', 3)
     max_depth = config_get_or('search', 'max_depth', 10)
 
@@ -106,7 +106,8 @@ def search(mes: List[MagicEntity], test_suite: TestSuite):
     root.count = 0
     root.mes = mes
     root.temperature = 0.0
-    root.tests = inspect.getsource(test_suite)
+    root.tests = test_container.get_source()
+    assert type(root.tests) == str
     root.errors = []
     root.score = -1  # root state has no score
     # state.orig_context = orig_context # TODO
@@ -124,8 +125,8 @@ def search(mes: List[MagicEntity], test_suite: TestSuite):
             for temp in get_temperatures():
                 log('Temperature', temp)
                 count += 1
-                new_state = generate_new_state(count, state, temp, test_suite)
-                if state is None:
+                new_state = generate_new_state(count, state, temp, test_container)
+                if new_state is None:
                     continue
                 state.children.append(new_state)
                 new_states.append(new_state)
@@ -146,42 +147,19 @@ def search(mes: List[MagicEntity], test_suite: TestSuite):
     return root, states
 
 
-def run_tests(test_union: Union[TestSuite, TestCase]) -> (List[str], int, int, int, float):
-    if issubclass(test_union, TestCase):
-        # In case you pass just a TestCase (like in tests/), we create a TestSuite out of it:
-        loader = TestLoader()
-        loader.suiteClass = CountingTestSuite
-        test_suite = loader.loadTestsFromTestCase(test_union)
-    else:
-        assert issubclass(test_union, CountingTestSuite), f'Expected CountingTestSuite or TestCase, got {test_union}'
-        test_suite = test_union
+def run_tests(tests_container: TestsContainer) -> (List[str], int, int, int, float):
+    test_suite = tests_container.generate_test_suite()
     runner = unittest.TextTestRunner()
     result = runner.run(test_suite)
     if result.testsRun == 0:
         raise f"Test class {test_suite} has no tests."
     errors_count = len(result.failures) + len(result.errors)
-
-    # AdditionTestCase(unittest.TestCase)
-    # test_suite = <unittest.suite.TestSuite tests=[None]>
-    # test_suite.__class__ = <class 'unittest.suite.TestSuite'>
-    # test_suite._tests = [None]
-
-    # TestLispIntepreter(unitai.TestCase)
-    # issubclass(test_union, unitai.TestCase) => True
-    # test_suite = <unittest.suite.TestSuite tests=[None, None, None, None]>
-
-    # if issubclass(test_union, unitai.TestCase):
-    # We can count the assertions instead of just test passed tests
-
-    # if getattr(result, 'passed_assertions', None) is not None:
     try:
         if not test_suite.ai_test_case:
             raise Exception()
         total_passed_assertions = test_suite.total_passed_assertions
-        # TODO: qui bisogna leggere passed_assertions dal test_suite, perche' result.passed_assertions e'
-        # solo l'ultimo sub-test passato, non il totale
         log('Using unitai.TestCase')
-        total_assertions = count_assertions(test_union)
+        total_assertions = tests_container.count_assertions()
         log(f"Total assertions: {total_assertions}, Passed: {total_passed_assertions}")
         if total_assertions == 0 or total_passed_assertions > total_assertions:
             raise Exception()
@@ -232,16 +210,6 @@ def parse_ai_output(t: str) -> Dict:
     found = re.findall(r'<implement name="(.+?)">(.*?)</implement>', t, re.DOTALL)
     found_dict = dict(found)
     return found_dict
-
-
-def count_assertions(test_case: TestCase):
-    src = inspect.getsource(test_case)
-    lines = src.split('\n')
-    count = 0
-    for line in lines:
-        if 'self.assert' in line and not line.strip().startswith('#'):
-            count += 1
-    return count
 
 
 def index_of_first_non_empty_char(line: str) -> int:

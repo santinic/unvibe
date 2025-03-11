@@ -1,7 +1,9 @@
+import inspect
 import unittest
 
-from unittestai import TestCase, MagicFunction, ai
-from unittestai.core import cleanup_error_str, parse_ai_output, run_tests, count_assertions, remove_extra_indentation
+from unittestai import TestCase, ai
+from unittestai.TestsContainer import count_assertions
+from unittestai.core import cleanup_error_str, parse_ai_output, remove_extra_indentation
 from unittestai.magic import cleanup_implementation, MagicClass
 
 
@@ -177,7 +179,8 @@ UnboundLocalError: cannot access local variable 'parse_token' where it is not as
                 self.assertEqual(lisp("(list (range 3)"), [0, 1, 2])
                 self.assertEqual(lisp("(sum (list 1 2 3)"), 6)
 
-        self.assertEqual(count_assertions(LispInterpreterTestClass), 7)
+        src = inspect.getsource(LispInterpreterTestClass)
+        self.assertEqual(count_assertions(src), 7)
 
     def test_remove_extra_indentation(self):
         code = '''

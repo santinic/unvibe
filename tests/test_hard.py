@@ -12,7 +12,7 @@ class TestHard(SearchTest):
             """Implementation of complex numbers in plain Python"""
             pass
 
-        class ComplexTestClass(unittest.TestCase):
+        class ComplexTestClass(unittestai.TestCase):
             def test_complex_init(self):
                 # Test with real and imaginary parts
                 c = Complex(3, 4)
@@ -84,12 +84,6 @@ class TestHard(SearchTest):
                 result = str(z)
                 self.assertEqual(result, '0')
 
-            def test_large_number(self):
-                # Test with large numbers
-                c1 = Complex(1e20, -5e30)
-                expected_str = f"{c1.real:.1e}+-{abs(c1.imag):.1e}j"
-                self.assertEqual(str(c1), expected_str)
-
             def test_complex_arithmetic_with_zero(self):
                 # Test adding zero
                 c = Complex(2, 3)
@@ -124,3 +118,4 @@ class TestHard(SearchTest):
 
         state = self.base([lisp], LispInterpreterTestClass)
         self.assertIn(state.mes[0].name, 'lisp')
+

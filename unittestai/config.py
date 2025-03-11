@@ -1,4 +1,5 @@
 import os
+import sys
 import tomllib
 
 config_file_name = '.unitai.toml'
@@ -21,11 +22,14 @@ def read_config():
 
 def check_config(config):
     if 'ai' not in config:
-        raise f'Section [ai] not found in {config_file_name}. Please check documentation: {doc_url}'
+        print(f'Section [ai] not found in {config_file_name}. Please check documentation: {doc_url}')
+        sys.exit(1)
     if 'provider' not in config['ai']:
-        raise f'Key "provider" not found in [ai] section of {config_file_name}. Please check documentation: {doc_url}'
+        print(f'Key "provider" not found in [ai] section of {config_file_name}. Please check documentation: {doc_url}')
+        sys.exit(1)
     if 'model' not in config['ai']:
-        raise f'Key "model" not found in [ai] section of {config_file_name}. Please check documentation: {doc_url}'
+        print(f'Key "model" not found in [ai] section of {config_file_name}. Please check documentation: {doc_url}')
+        sys.exit(1)
 
 
 def config_get_or(section, key, default=None):

@@ -57,12 +57,12 @@ class BasicTests(SearchTest):
             pass
 
         @ai
-        def exp(x, a):
+        def power(x, a):
             """Implements exponentiation x^a"""
             pass
 
         def pitagora(a, b):
-            return sqrt(add(exp(a, 2), exp(b, 2)))
+            return sqrt(add(power(a, 2), power(b, 2)))
 
         class PitagoraTestClass(unittest.TestCase):
             def test_pitagoras(self):
@@ -70,8 +70,8 @@ class BasicTests(SearchTest):
                 self.assertAlmostEquals(pitagora(5, 12), 13, 2)
                 self.assertAlmostEquals(pitagora(7, 24), 25, 2)
 
-        state = self.base([add, sqrt, exp], PitagoraTestClass, display_tree=True)
-        self.assertEqual(set([mf.name for mf in state.mes]), set(['add', 'sqrt', 'exp']))
+        state = self.base([add, sqrt, power], PitagoraTestClass, display_tree=True)
+        self.assertEqual(set([mf.name for mf in state.mes]), set(['add', 'sqrt', 'power']))
 
     def test_fix_wrong_impl_is_palindrome(self):
         # Utils class to check if it retains indentation

@@ -1,10 +1,14 @@
 import argparse
 import sys
 import unittest
+from datetime import datetime
+from pathlib import Path
 from unittest import TestSuite
 
-from unittestai import magic_entities
+from unittestai import magic_entities, MagicEntity
+from unittestai.TestsContainer import FolderPatternTestsContainer
 from unittestai.core import start_search
+from unittestai.state import State
 from unittestai.suite import CountingTestSuite
 
 epilog = '''examples:
@@ -20,8 +24,9 @@ def main():
         epilog=epilog)
     # parser.add_argument('source', help='source file or folder')
     parser.add_argument('tests', help='unit test file or folder')
-    parser.add_argument('-r', '--replace', action='store_true', help='replace original files with new implementations')
-    parser.add_argument('-o', '--output', help='output folder for new implementations')
+    # parser.add_argument('-r', '--replace', action='store_true', help='replace original files with new implementations')
+    parser.add_argument('-o', '--output_folder', default='.', help='output folder for new implementations')
+    parser.add_argument('-p', '--pattern', default='test*.py', help='pattern for test files')
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(0)
@@ -30,12 +35,41 @@ def main():
     # print(args_for_unittest_main)
     # TestProgram(module=None, argv=args_for_unittest_main)
 
-    # Use Unittest library to find all the test classes in the given folder:
-    test_loader = unittest.TestLoader()
-    test_loader.suiteClass = CountingTestSuite  # Count the passed assertions if possible
-    test_suite: TestSuite = test_loader.discover(args.tests)
-    print(f'{test_suite.countTestCases()} test cases found')
-    start_search(magic_entities, test_suite)
+    # get all the sources that follow the pattern
+    tests_container = FolderPatternTestsContainer(args.tests, args.pattern)
+    best_state = start_search(magic_entities, tests_container)
+    write_output_folder(best_state, args.output_folder)
+
+
+def write_output_folder(state: State, output_folder):
+    if state.score == 1:
+        msg = '# This implementation passed all tests'
+    elif state.score == 0:
+        msg = ('# Could not find any implementation that passes any test. Check the errors returned from the tests'
+               '# You may want to try a different model, change max_temperature, max_depth or random_spread params.')
+    else:
+        msg = '# This is the best implementation we found, but it did not pass all the tests. Check the errors below.'
+
+    final_text = f'''
+    # UnittestAI Execution output.
+    {msg}
+    # Score: {state.score}
+    # Passed assertions: {state.passed_assertions}/{state.total_assertions}
+    '''
+    if len(state.errors) > 0:
+        all_errors = '=====\n'.join(state.errors)
+        commented_errors = ''
+        for line in all_errors.split('\n'):
+            commented_errors += '# ' + line + '\n'
+        final_text += commented_errors
+    for me in state.mes:
+        final_text += f'\n{me.impl}\n'
+    time = datetime.now().strftime('%H-%M-%S')
+    Path(output_folder).mkdir(exist_ok=True)
+    file_path = Path(output_folder) / f'unittestai_output_{time}'
+    with open(file_path, 'w') as f:
+        f.write(final_text)
+    print('Written results to', file_path)
 
 
 if __name__ == '__main__':
