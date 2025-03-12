@@ -1,15 +1,12 @@
 import argparse
 import sys
-import unittest
 from datetime import datetime
 from pathlib import Path
-from unittest import TestSuite
 
-from unittestai import magic_entities, MagicEntity
+from unittestai import magic_entities
 from unittestai.TestsContainer import FolderPatternTestsContainer
 from unittestai.core import start_search
 from unittestai.state import State
-from unittestai.suite import CountingTestSuite
 
 epilog = '''examples:
   unittestai src/ tests/                    # Uses every file in src/ and tests/ folders
@@ -22,23 +19,32 @@ def main():
         description='UnitAI - Generate code that pass unit-tests',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=epilog)
-    # parser.add_argument('source', help='source file or folder')
-    parser.add_argument('tests', help='unit test file or folder')
-    # parser.add_argument('-r', '--replace', action='store_true', help='replace original files with new implementations')
+    parser.add_argument('sources', help='source file or sources folder')
+    parser.add_argument('tests', help='unit test file or tests folder')
     parser.add_argument('-o', '--output_folder', default='.', help='output folder for new implementations')
     parser.add_argument('-p', '--pattern', default='test*.py', help='pattern for test files')
-    if len(sys.argv) == 1:
+    if len(sys.argv) <= 2:
         parser.print_help()
         sys.exit(0)
     args = parser.parse_args()
-    # args_for_unittest_main = sys.argv
-    # print(args_for_unittest_main)
-    # TestProgram(module=None, argv=args_for_unittest_main)
-
-    # get all the sources that follow the pattern
     tests_container = FolderPatternTestsContainer(args.tests, args.pattern)
-    best_state = start_search(magic_entities, tests_container)
+    tests_container.generate_test_suite()
+    context = get_context(args)
+    best_state = start_search(magic_entities, tests_container, sources)
     write_output_folder(best_state, args.output_folder)
+
+
+def get_context(args) -> str:
+    sources = Path(args.sources)
+    if sources.is_file():
+        return sources.read_text()
+    elif sources.is_dir():
+        context = ''
+        for file in sources.glob('*.py'):
+            context += file.read_text() + '\n'
+        return context
+    else:
+        raise FileNotFoundError(f'File or folder not found: {args.sources}')
 
 
 def write_output_folder(state: State, output_folder):

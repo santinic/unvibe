@@ -2,6 +2,7 @@ import re
 import sys
 import traceback
 import unittest
+from copy import copy
 from pprint import pprint
 from random import random
 from typing import List, Dict
@@ -23,10 +24,6 @@ def generate_new_state(count, state: State, temperature: float, tests_container:
     new_state.count = count
     new_state.tests = state.tests
     new_state.temperature = temperature
-    if state.context.strip() == '':
-        log(state)
-        log('Context is empty?')
-        sys.exit(1)
     first_error = [state.errors[0]] if len(state.errors) > 0 else []
     prompt, resp_text = ai_call(state.mes, state.context, state.tests, first_error, temperature)
     new_state.prompt = prompt
@@ -42,12 +39,8 @@ def generate_new_state(count, state: State, temperature: float, tests_container:
                 me.set_impl(cleaned_up)
             else:
                 raise f'Expected implementation for {me.name}'
-        new_state.context = new_state.build_context()
-        errors, errors_count, passed_assertions, total_assertions, score = run_tests(tests_container)
-        new_state.passed_assertions = passed_assertions
-        new_state.total_assertions = total_assertions
-        new_state.errors = errors
-        new_state.score = score
+        new_state.context = new_state.build_context_from_magic_entities()
+        run_tests(tests_container, new_state)
         # Reset implementations:
         for me in new_state.mes:
             me.set_impl(None)
@@ -61,20 +54,15 @@ def generate_new_state(count, state: State, temperature: float, tests_container:
     return new_state
 
 
-def start_search(mes: List[MagicEntity], tests_container: TestsContainer, display_tree=True):
+def start_search(mes: List[MagicEntity], tests_container: TestsContainer, sources='', display_tree=True):
     log('Using model', config['ai']['model'])
 
     # Check all magic entities are registered
     for me in mes:
         assert me in magic_entities, f'{me} not registered with @unitai'
 
-    # Remove @ai annotations from the function implementation
-    clean_context = ''
-    for me in mes:
-        clean_context += me.clean_orig_code + '\n'
-
     # Run the tree search
-    root, states = search(mes, tests_container)
+    root, states = search(mes, tests_container, sources)
     best_state = states[0]
     if display_tree:
         file = create_page_and_open_browser(root)
@@ -97,7 +85,29 @@ def get_temperatures():
     return [0.0] + temperatures  # always try temp=0 at first
 
 
-def search(mes: List[MagicEntity], test_container: TestsContainer):
+def build_initial_context(mes, sources):
+    if len(sources) > 0:
+        # We have a list of source files, so we replace each MagicEntity with its implementation
+        new_context = copy(sources)
+        for me in mes:
+            if me.impl is None:
+                continue
+            idx = sources.find(me.orig_code)
+            if idx < 0:
+                log(f'Could not find {me.orig_code} in context')
+                continue
+            else:
+                new_context = new_context.replace(me.orig_code, me.impl)
+        return new_context
+    else:
+        # We don't have files, just MEs, so we concatenate the implementations
+        new_context = ''
+        for me in mes:
+            new_context += me.orig_code + '\n'
+        return new_context
+
+
+def search(mes: List[MagicEntity], test_container: TestsContainer, sources=''):
     take_best_n = config_get_or('search', 'take_best_n', 3)
     max_depth = config_get_or('search', 'max_depth', 10)
 
@@ -110,8 +120,8 @@ def search(mes: List[MagicEntity], test_container: TestsContainer):
     assert type(root.tests) == str
     root.errors = []
     root.score = -1  # root state has no score
-    # state.orig_context = orig_context # TODO
-    root.context = root.build_context()
+    root.context = build_initial_context(mes, sources)
+    root.orig_context = root.context
     states = [root]
 
     found = False
@@ -147,31 +157,45 @@ def search(mes: List[MagicEntity], test_container: TestsContainer):
     return root, states
 
 
-def run_tests(tests_container: TestsContainer) -> (List[str], int, int, int, float):
+def run_tests(tests_container: TestsContainer, new_state: State):
+    """Runs the tests and saves the score/assertions info/errors in the new_state"""
     test_suite = tests_container.generate_test_suite()
     runner = unittest.TextTestRunner()
+    assert test_suite.total_passed_assertions == 0
+    assert test_suite.total_executed_assertions == 0
+    assert test_suite.total_failed_assertions == 0
     result = runner.run(test_suite)
     if result.testsRun == 0:
         raise f"Test class {test_suite} has no tests."
     errors_count = len(result.failures) + len(result.errors)
     try:
         if not test_suite.ai_test_case:
-            raise Exception()
+            raise Exception('Not using unitai.TestCase')
         total_passed_assertions = test_suite.total_passed_assertions
+        total_executed_assertions = test_suite.total_executed_assertions
+        total_failed_assertions = test_suite.total_failed_assertions
         log('Using unitai.TestCase')
         total_assertions = tests_container.count_assertions()
-        log(f"Total assertions: {total_assertions}, Passed: {total_passed_assertions}")
+        log(f"Total assertions: {total_assertions}, Passed: {total_passed_assertions}, "
+            f"Executed: {total_executed_assertions}, Failed: {total_failed_assertions}")
         if total_assertions == 0 or total_passed_assertions > total_assertions:
-            raise Exception()
+            raise Exception('Invalid assertions count')
         score = total_passed_assertions / total_assertions
     except Exception as exc:
-        # log('We recommend your test classes extend unitai.TestCase (instead of unittest.TestCase), for smoother scoring')
+        log(exc)
         score = 1 - errors_count / result.testsRun
-        total_passed_assertions, total_assertions = None, None
+        total_passed_assertions, total_executed_assertions, total_assertions, total_failed_assertions = None, None, None, None
     error_strings = []
     for test_suite, error_str in result.errors + result.failures:
         error_strings.append(cleanup_error_str(error_str))
-    return error_strings, errors_count, total_passed_assertions, total_assertions, score
+    # if score < 1:
+    #     assert sum([len(s) for s in error_strings]) > 0, 'Errors should be populated if score < 1'
+    new_state.passed_assertions = total_passed_assertions
+    new_state.executed_assertions = total_executed_assertions
+    new_state.failed_assertions = total_failed_assertions
+    new_state.total_assertions = total_assertions
+    new_state.errors = error_strings
+    new_state.score = score
 
 
 def remove_lines_with(lines, is_target):

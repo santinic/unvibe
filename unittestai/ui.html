@@ -30,6 +30,11 @@
     .tree-img {
         max-width: 100%;
     }
+
+    ul {
+        padding-left: 10px;
+    }
+
 </style>
 <script>
     const root = __JSON_TREE__;
@@ -72,6 +77,8 @@
                 Count: ${node.count}<br/>
                 Score: ${node.score}<br/>
                 Passed Assertions: ${node.passed_assertions} / ${node.total_assertions}<br/>
+                Executed Assertions: ${node.executed_assertions}<br/>
+                Failed Assertions: ${node.failed_assertions}<br/>
                 Temperature: ${node.temperature}<br/><br/>
                 <h2>AI Prompt:</h2>
                 <textarea>${node.prompt}</textarea>
@@ -104,17 +111,21 @@
         <div class="col-md-4 col-lg-3">
             <div class="card">
                 <div class="card-body">
-                    <p class="card-text">
+                    <small class="card-text">
                         __TREE__
-                    </p>
+                    </small>
                 </div>
             </div>
         </div>
         <div class="col-md-8 col-lg-9">
-            <div id="main">
-                Click on a node to see details
+            <div class="card">
+                <div class="card-body">
+                    <div id="main">
+                        Click on a node to see details
+                    </div>
+                    <div id="entities"></div>
+                </div>
             </div>
-            <div id="entities"></div>
         </div>
     </div>
 </div>

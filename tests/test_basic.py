@@ -19,6 +19,9 @@ class BasicTests(SearchTest):
                 self.assertEqual(fun(2.4, 2.1), 4.5)
 
         state = self.base([fun], AdditionTestClass)
+        self.assertEqual(state.passed_assertions, 3)
+        self.assertEqual(state.failed_assertions, 0)
+        self.assertEqual(state.executed_assertions, 3)
 
     def test_sqrt(self):
         @ai
@@ -43,7 +46,8 @@ class BasicTests(SearchTest):
                 self.assertEqual(sqrt(0), 0)
                 self.assertEqual(sqrt(0.0), 0.0)
 
-        self.base([sqrt], SqrtTest, display_tree=True)
+        state = self.base([sqrt], SqrtTest, display_tree=True)
+        self.assertEqual(state.passed_assertions, 10)
 
     def test_pitagora(self):
         @ai
@@ -104,3 +108,4 @@ class BasicTests(SearchTest):
                 self.assertEqual(bubble_sort([4, 3, 2, 1]), [1, 2, 3, 4])
 
         state = self.base([bubble_sort], TestBubbleSort)
+        self.assertEqual(state.passed_assertions, None)  # plain unittest.TestCase

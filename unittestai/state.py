@@ -15,6 +15,8 @@ class State:
     score: float  # the score for this solution
     passed_assertions: int
     total_assertions: int
+    executed_assertions: int
+    failed_assertions: int
     children: List['State']
     temperature: float = None
     count = None
@@ -31,11 +33,13 @@ class State:
         self.score: float = None
         self.passed_assertions: int = 0
         self.total_assertions: int = 0
+        self.executed_assertions: int = 0
+        self.failed_assertions: int = 0
         self.children: List['State'] = []
         self.temperature: float = None
         self.count = None
 
-    def build_context(self):
+    def build_context_from_magic_entities(self):
         context = self.orig_context
         for mf in self.mes:
             context += (mf.impl if mf.impl is not None else mf.clean_orig_code) + '\n'
@@ -57,6 +61,8 @@ class State:
             'score': self.score,
             'passed_assertions': self.passed_assertions,
             'total_assertions': self.total_assertions,
+            'executed_assertions': self.executed_assertions,
+            'failed_assertions': self.failed_assertions,
             'temperature': self.temperature,
             'children': [child.to_dict() for child in self.children]
         }

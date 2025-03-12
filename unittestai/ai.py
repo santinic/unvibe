@@ -21,7 +21,7 @@ def redis_cached(func):
     """redis memoization for functions"""
 
     def wrapper(*args, **kwargs):
-        # return func(*args, **kwargs) # bypass
+        return func(*args, **kwargs) # bypass
         key = f'{func.__name__}__{args}__{kwargs}'
         if redis_client.exists(key):
             print('Return from cache', key[:150] + '…')
@@ -43,7 +43,7 @@ def call_gemini(system, prompt, temperature):
         model=config['ai']['model'],
         contents=system + '\n' + prompt,
     )
-    return resp['content']
+    return resp.text
 
 
 @redis_cached
@@ -167,8 +167,10 @@ def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> st
     assert context.strip() != '', 'Context should not be empty'  # TODO: Catch earlier
     func_names_str = ' '.join([mf.name for mf in mfs])
     errors_tag = ''
+    fix_msg = ''
     if len(errors) > 0:
         errors_tag = '<errors>\n' + '\n'.join(errors) + '</errors>'
+        fix_msg = 'Fix the errors! you have already tried many times, must try something else.'
     prompt = f'''
 {example}
 <input>
@@ -179,7 +181,8 @@ def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> st
 {errors_tag}
 </input>
 
-Implement or Fix the functions: {func_names_str}
+Implement the functions: {func_names_str}
+{fix_msg}
 '''
     provider = config['ai']['provider']
     if provider == 'claude':
