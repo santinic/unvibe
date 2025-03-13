@@ -3,7 +3,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import TestCase
 
-from unittestai.__main__ import main
+import unvibe
+from unvibe.__main__ import main
 
 base_folder = "../tests_e2e"
 
@@ -27,8 +28,11 @@ def create_base_test(folder_name):
             tests=tests,
             pattern='test*.py',  # default unittest pattern
             output_folder='.',  # default output folder
+            display_report=False
         )
+
         print(args)
+        unvibe.reset()
         state, output_file = main(args)
         self.assertIsNotNone(state)
         self.assertEqual(state.score, 1)
@@ -55,5 +59,7 @@ def create_base_test(folder_name):
 # For every folder inside ../test_e2e, create a test_case
 for file in os.listdir(base_folder):
     if (Path(base_folder) / file).is_dir():
+        if file.startswith('skip'):
+            continue
         folder_name = file
         setattr(TestEndToEnd, f"test_{folder_name}", create_base_test(folder_name))

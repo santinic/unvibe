@@ -1,17 +1,16 @@
 import argparse
 import sys
-import unittest
 from datetime import datetime
 from pathlib import Path
 
-from unittestai import magic_entities, log
-from unittestai.TestsContainer import FolderPatternTestsContainer
-from unittestai.core import start_search
-from unittestai.state import State
+from unvibe import magic_entities, log, project_name
+from unvibe.tests_container import FolderPatternTestsContainer
+from unvibe.core import start_search
+from unvibe.state import State
 
-epilog = '''examples:
-  unittestai src/ tests/                    # Uses every file in src/ and tests/ folders
-  unittestai src/main.py test/test_main.py  # Use only the indicated files
+epilog = f'''examples:
+  {project_name} src/ tests/                    # Uses every file in src/ and tests/ folders
+  {project_name} src/main.py test/test_main.py  # Use only the indicated files
 '''
 
 
@@ -24,6 +23,7 @@ def parse_args_and_run_main() -> State:
     parser.add_argument('tests', help='unit-tests folder')
     parser.add_argument('-o', '--output_folder', default='.', help='output folder for new implementations')
     parser.add_argument('-p', '--pattern', default='test*.py', help='pattern for test files')
+    parser.add_argument('-d', '--display_report', help='Display HTML report for the search tree', action='store_true', default=False)
     if len(sys.argv) <= 2:
         parser.print_help()
         sys.exit(0)
@@ -34,11 +34,10 @@ def parse_args_and_run_main() -> State:
 def main(args) -> (State, str):
     log('Sources:', args.sources)
     log('Tests:', args.tests)
-
     tests_container = FolderPatternTestsContainer(args.tests, args.pattern)
     tests_container.generate_test_suite()
     sources = get_sources_context(args)
-    best_state = start_search(magic_entities, tests_container, sources)
+    best_state = start_search(magic_entities, tests_container, sources, args.display_report)
     output_file = write_output_folder(best_state, args.output_folder)
     return best_state, output_file
 
@@ -65,23 +64,23 @@ def write_output_folder(state: State, output_folder):
     else:
         msg = '# This is the best implementation we found, but it did not pass all the tests. Check the errors below.'
 
-    final_text = f'''
-    # UnittestAI Execution output.
-    {msg}
-    # Score: {state.score}
-    # Passed assertions: {state.passed_assertions}/{state.total_assertions}
-    '''
+    test_case_msg = f'(make your test classes extend {project_name}.TestCase to see this)' if state.passed_assertions is None else ''
+    final_text = f'''# {project_name.capitalize()} Execution output.
+{msg}
+# Score: {state.score}
+# Passed assertions: {state.passed_assertions}/{state.total_assertions} {test_case_msg}
+'''
     if len(state.errors) > 0:
         all_errors = '=====\n'.join(state.errors)
         commented_errors = ''
         for line in all_errors.split('\n'):
             commented_errors += '# ' + line + '\n'
         final_text += commented_errors
-    for me in state.mes:
-        final_text += f'\n{me.impl}\n'
+    for key, impl in state.impls.items():
+        final_text += f'\n{impl}\n'
     time = datetime.now().strftime('%H-%M-%S')
     Path(output_folder).mkdir(exist_ok=True)
-    file_path = Path(output_folder) / f'unittestai_output_{time}'
+    file_path = Path(output_folder) / f'{project_name}_output_{time}'
     with open(file_path, 'w') as f:
         f.write(final_text)
     print('Written results to', file_path)

@@ -3,7 +3,7 @@ import os
 import sys
 from bigtree import Node, print_tree, tree_to_dot
 
-from unittestai.core import State
+from unvibe.core import State
 
 
 def create_page_and_open_browser(root):
@@ -30,7 +30,7 @@ def create_html_page(root):
     template = template.replace('__TREE__', tree_html)
     template = template.replace('__JSON_TREE__', json.dumps(root.to_dict()))
     func_names = '_'.join([mf.name for mf in root.mes])
-    report_file = f'tree_{func_names}.html'  # Use the same file for each run
+    report_file = f'{project_name}_report_{func_names}.html'  # Use the same file for each run
     with open(report_file, 'w') as f:
         f.write(template)
     return report_file

@@ -1,5 +1,4 @@
 import re
-import sys
 import traceback
 import unittest
 from copy import copy
@@ -7,14 +6,14 @@ from pprint import pprint
 from random import random
 from typing import List, Dict
 
-from unittestai import ai_call, magic_entities
-from unittestai.TestsContainer import TestsContainer
-from unittestai.config import config, config_get_or
-from unittestai.log import log
-from unittestai.magic import cleanup_implementation, MagicEntity
-from unittestai.rand import up_to_1
-from unittestai.state import State
-from unittestai.ui import create_page_and_open_browser
+from unvibe import ai_call, magic_entities
+from unvibe.tests_container import TestsContainer
+from unvibe.config import config, config_get_or
+from unvibe.log import log
+from unvibe.magic import cleanup_implementation, MagicEntity
+from unvibe.rand import up_to_1
+from unvibe.state import State
+from unvibe.ui import create_page_and_open_browser
 
 
 def generate_new_state(count, state: State, temperature: float, tests_container: TestsContainer) -> State:
@@ -38,7 +37,7 @@ def generate_new_state(count, state: State, temperature: float, tests_container:
                 cleaned_up = cleanup_implementation(impls[me.name], me.__class__)
                 me.set_impl(cleaned_up)
             else:
-                raise f'Expected implementation for {me.name}'
+                raise Exception(f'Expected implementation for {me.name}')
         new_state.context = new_state.build_context_from_magic_entities()
         run_tests(tests_container, new_state)
         # Reset implementations:
@@ -54,15 +53,15 @@ def generate_new_state(count, state: State, temperature: float, tests_container:
     return new_state
 
 
-def start_search(mes: List[MagicEntity], tests_container: TestsContainer, sources='', display_tree=True):
+def start_search(mes: List[MagicEntity], tests_container: TestsContainer, sources='', display_tree=False):
     log('Using model', config['ai']['model'])
 
     # Check all magic entities are registered
     for me in mes:
-        assert me in magic_entities, f'{me} not registered with @unitai'
+        assert me in magic_entities, f'{me} not registered with @ai'
 
     # Run the tree search
-    root, states = search(mes, tests_container, sources)
+    root, states = search(mes, tests_container, sources, display_tree)
     best_state = states[0]
     if display_tree:
         file = create_page_and_open_browser(root)
@@ -81,10 +80,9 @@ def get_temperatures(depth):
     if random_type == 'increasing':
         return [up_to_1.pop(0) for _ in range(random_spread)]
     elif random_type == 'uniform':
-        return [random() * max_temperature for _ in range(random_spread)]
+        return [0] + [random() * max_temperature for _ in range(random_spread)]
     else:
-        raise f'Unknown random_type "{random_type}". Use either "increasing" or "uniform"'
-    return [0.0] + temperatures  # always try temp=0 at first
+        raise Exception(f'Unknown random_type "{random_type}". Use either "increasing" or "uniform"')
 
 
 def build_initial_context(mes, sources):
@@ -109,7 +107,7 @@ def build_initial_context(mes, sources):
         return new_context
 
 
-def search(mes: List[MagicEntity], test_container: TestsContainer, sources=''):
+def search(mes: List[MagicEntity], test_container: TestsContainer, sources='', display_tree=False):
     take_best_n = config_get_or('search', 'take_best_n', 3)
     max_depth = config_get_or('search', 'max_depth', 10)
 
@@ -154,7 +152,8 @@ def search(mes: List[MagicEntity], test_container: TestsContainer, sources=''):
         log('Scores   ', [s for s in states], 'Picking the best', take_best_n)
         states = states[:take_best_n]
         log('Selected ', [s for s in states])
-        create_page_and_open_browser(root)
+        if display_tree:
+            create_page_and_open_browser(root)
         if found: break
     return root, states
 
@@ -165,15 +164,15 @@ def run_tests(tests_container: TestsContainer, new_state: State):
     runner = unittest.TextTestRunner()
     result = runner.run(test_suite)
     if result.testsRun == 0:
-        raise f"Test class {test_suite} has no tests."
+        raise Exception(f"Test class {test_suite} has no tests.")
     errors_count = len(result.failures) + len(result.errors)
     try:
         if not test_suite.ai_test_case:
-            raise Exception('Not using unitai.TestCase')
+            raise Exception('Not using unvibe.TestCase')
         total_passed_assertions = test_suite.total_passed_assertions
         total_executed_assertions = test_suite.total_executed_assertions
         total_failed_assertions = test_suite.total_failed_assertions
-        log('Using unitai.TestCase')
+        log('Using unvibe.TestCase')
         total_assertions = tests_container.count_assertions()
         log(f"Total assertions: {total_assertions}, Passed: {total_passed_assertions}, "
             f"Executed: {total_executed_assertions}, Failed: {total_failed_assertions}")

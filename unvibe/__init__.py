@@ -1,11 +1,12 @@
 from typing import List, Union
 
-from unittestai.suite import TestCase as MyTestCase
+from unvibe.suite import TestCase as MyTestCase
 
-from unittestai.magic import MagicFunction, MagicEntity, MagicClass
+from unvibe.magic import MagicFunction, MagicEntity, MagicClass
 from .ai import ai_call
 from .log import log
 
+project_name = 'unvibe'
 magic_entities: List[MagicEntity] = []
 config = None
 TestCase = MyTestCase

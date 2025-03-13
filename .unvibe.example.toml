@@ -1,0 +1,44 @@
+[ai]
+provider = "claude"
+api_key = "sk-..."
+model = "claude-3-5-haiku-latest"
+max_tokens = 5000
+
+#[ai]
+#provider = "ollama"
+#model =  "llama3.2:latest"
+#model = "phi3:mini"
+#model = "phi4:latest"
+#model = "deepseek-r1:7b"
+#model = "deepseek-r1:8b"
+#host = "http://localhost:11434"
+
+#[ai]
+#provider = "openai"
+#base_url = "https://api.deepseek.com"
+#api_key = "..."
+#temperature = 0.0
+#max_tokens = 1024
+
+#[ai]
+#provider = "gemini"
+#api_key = "..."
+#model = "gemini-2.0-flash"  # "models/gemini-2.0-flash-lite-preview-02-05"
+
+
+[search]
+random_spread = 4       # How many random tries to make before selecting the best move.
+max_depth = 8           # Maximum depth of the search tree.
+max_temperature = 0.3   # UnitAI uses tries random temperature, up to this value.
+                        # Some models perform better at lower temps, in general
+                        # Higher temperature = more exploration
+
+
+[cache]
+provider = "redis"      # If you don't want to use cache, comment out this section.
+host = "localhost"
+port = 6379
+password = ""
+db = 0
+expire = 604800
+

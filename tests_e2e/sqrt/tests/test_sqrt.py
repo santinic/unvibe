@@ -1,8 +1,8 @@
-import unittestai
+import unvibe
 from tests_e2e.sqrt.src.sqrt import my_sqrt
 
 
-class SqrtTest(unittestai.TestCase):
+class SqrtTest(unvibe.TestCase):
     def test_sqrt_integer(self):
         self.assertEqual(type(my_sqrt(4)), float)
         self.assertAlmostEquals(my_sqrt(4), 2, 2)

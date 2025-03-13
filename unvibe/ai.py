@@ -1,27 +1,28 @@
-import re
 import ollama
 import redis
 import anthropic
-from typing import List, Dict, Tuple
-from pprint import pprint
+from typing import List
 from openai import OpenAI
 from google import genai
 
 from . import MagicFunction
 from .config import config
 
-redis_client = redis.Redis(host=config['cache']['host'], port=config['cache']['port'], db=config['cache']['db'])
-redis_client.ping()
-
 total_input_tokens = 0
 total_output_tokens = 0
 
 
+def cached(func):
+    return func
+
+
 def redis_cached(func):
     """redis memoization for functions"""
+    redis_client = redis.Redis(host=config['cache']['host'], port=config['cache']['port'], db=config['cache']['db'])
+    redis_client.ping()
 
     def wrapper(*args, **kwargs):
-        return func(*args, **kwargs) # bypass
+        return func(*args, **kwargs)  # bypass
         key = f'{func.__name__}__{args}__{kwargs}'
         if redis_client.exists(key):
             print('Return from cache', key[:150] + '…')
@@ -36,7 +37,7 @@ def redis_cached(func):
     return wrapper
 
 
-@redis_cached
+@cached
 def call_gemini(system, prompt, temperature):
     client = genai.Client(api_key=config['ai']['api_key'])
     resp = client.models.generate_content(
@@ -46,7 +47,7 @@ def call_gemini(system, prompt, temperature):
     return resp.text
 
 
-@redis_cached
+@cached
 def call_openai(system, prompt, temperature):
     # TODO: plugin temperature
     client = OpenAI(api_key=config['ai']['api_key'], base_url=config['ai']['base_url'])
@@ -71,7 +72,7 @@ def call_openai(system, prompt, temperature):
     return resp.choices[0].message.content
 
 
-@redis_cached
+@cached
 def call_claude(system, prompt, temperature):
     client = anthropic.Anthropic(api_key=config['ai']['api_key'])
     message = client.messages.create(
@@ -91,7 +92,7 @@ def call_claude(system, prompt, temperature):
     return message.content[0].text
 
 
-@redis_cached
+@cached
 def call_ollama(system, prompt, temperature, model):
     client = ollama.Client(host=config['ai']['host'])
     resp = client.generate(

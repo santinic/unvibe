@@ -1,9 +1,9 @@
 import traceback
 import unittest
 
-from unittestai import reset
-from unittestai.TestsContainer import ClassTestsContainer
-from unittestai.core import start_search
+from unvibe import reset
+from unvibe.tests_container import ClassTestsContainer
+from unvibe.core import start_search
 
 
 class SearchTest(unittest.TestCase):

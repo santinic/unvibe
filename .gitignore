@@ -171,7 +171,5 @@ cython_debug/
 .pypirc
 
 .idea
-.unitai.json
-.unitai.toml
-.unittestai.toml
+.unvibe.toml
 tree_*.html

@@ -9,11 +9,11 @@ from termcolor import colored
 annotation_text = '@ai'
 
 impl_is_none_msg = colored(
-    'You are probably running a function with @ai annotation without using UnitAI.\n'
+    'You are probably running a function with @ai annotation without using Unvibe as runner.\n'
     'To run UnitAI you need to define unit-tests and annotate functions with @ai and then run:\n', 'red')
 impl_is_none_msg += (
-    '$ unitai tests/                          # To discover all tests in the tests/ folder\n'
-    '$ unitai tests/test_my_test_case.py      # To run only the tests in the indicated file')
+    '$ unvibe src/ tests/                     # To discover all tests in the tests/\n'
+    '$ unvibe src/main.py tests/test_main.py  # To run only the tests in the indicated file')
 
 
 def as_short_code(code, max_len=150):

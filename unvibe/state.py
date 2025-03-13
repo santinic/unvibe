@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from unittestai import MagicFunction, MagicEntity
+from unvibe import MagicFunction, MagicEntity
 
 
 class State:

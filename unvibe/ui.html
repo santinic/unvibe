@@ -53,6 +53,14 @@
     }
     console.log(treeMap)
 
+    function card(title, body) {
+        return `
+        <div class="card mb-3">
+            <div class="card-header">${title}</div>
+            <div class="card-body">${body}</div>
+        </div>`
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const lis = [...document.getElementsByClassName('node')];
         lis.forEach((li) => {
@@ -73,30 +81,25 @@
                     }
                 }
                 const mainDiv = document.getElementById('main');
-                mainDiv.innerHTML = `
-                Count: ${node.count}<br/>
-                Score: ${node.score}<br/>
-                Passed Assertions: ${node.passed_assertions} / ${node.total_assertions}<br/>
-                Executed Assertions: ${node.executed_assertions}<br/>
-                Failed Assertions: ${node.failed_assertions}<br/>
-                Temperature: ${node.temperature}<br/><br/>
-                <h2>AI Prompt:</h2>
-                <textarea>${node.prompt}</textarea>
-                <h2>AI Output:</h2>
-                <textarea>${node.ai_output}</textarea>
-                <h2>Errors:</h2>
-                <pre>${allErrors}</pre>
-            `
+
+                let html = ''
+                html += card('Node Details', `
+                    Count: ${node.count}<br/>
+                    Score: ${node.score}<br/>
+                    Passed Assertions: ${node.passed_assertions} / ${node.total_assertions}<br/>
+                    Executed Assertions: ${node.executed_assertions}<br/>
+                    Failed Assertions: ${node.failed_assertions}<br/>
+                    Temperature: ${node.temperature}<br/><br/>
+                `);
+                html += card('AI Prompt', `<textarea>${node.prompt}</textarea>`);
+                html += card('AI Output', `<textarea>${node.ai_output}</textarea>`);
+                html += card('Errors', `<pre>${allErrors}</pre>`);
+                mainDiv.innerHTML = html;
+
                 const entitiesDiv = document.getElementById('entities');
                 entitiesDiv.innerHTML = '';
                 for (const [entityName, impl] of Object.entries(node.impls)) {
-                    entitiesDiv.innerHTML += `
-                    <div>
-                        <h2>Entity: ${entityName}</h2>
-                        <p>Implementation:</p>
-                        <textarea>${impl}</textarea>
-                    </div>
-                `
+                    entitiesDiv.innerHTML += card(`Entity: ${entityName}`, `<textarea>${impl}</textarea>`);
                 }
             });
 
@@ -104,12 +107,15 @@
     });
 </script>
 <div class="container-fluid">
-    <h2>UnittestAI Execution Report</h2>
+    <h3>UnittestAI Execution Report</h3>
     <img src="__TREE_IMG__" class="tree-img"/>
     <br/><br/>
     <div class="row">
-        <div class="col-md-4 col-lg-3">
+        <div class="col-md-4 col-lg-4">
             <div class="card">
+                <div class="card-header">
+                    Search Tree
+                </div>
                 <div class="card-body">
                     <small class="card-text">
                         __TREE__
@@ -117,15 +123,11 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-8 col-lg-9">
-            <div class="card">
-                <div class="card-body">
-                    <div id="main">
-                        Click on a node to see details
-                    </div>
-                    <div id="entities"></div>
-                </div>
+        <div class="col-md-8 col-lg-8">
+            <div id="main">
+                Click on a node to see details
             </div>
+            <div id="entities"></div>
         </div>
     </div>
 </div>

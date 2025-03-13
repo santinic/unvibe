@@ -1,4 +1,4 @@
-from unittestai import ai
+from unvibe import ai
 
 
 class Utils:

@@ -1,0 +1,7 @@
+services:
+  unvibe:
+    container_name: unvibe
+    build:
+      context: .
+    ports:
+      - 8000:8000

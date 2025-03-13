@@ -1,5 +1,5 @@
 [project]
-name = "unittestai"
+name = "unvibe"
 version = "0.1.0"
 description = "Generate code from unit-tests"
 authors = [
@@ -24,4 +24,8 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-unittestai = "unittestai.__main__:main"
+unvibe = "unvibe.__main__:parse_args_and_run_main"
+unvibe-server = "unvibe.server:__main__"
+
+[tool.poetry]
+package-mode = false

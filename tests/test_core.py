@@ -1,10 +1,10 @@
 import inspect
 import unittest
 
-from unittestai import TestCase, ai
-from unittestai.TestsContainer import count_assertions
-from unittestai.core import cleanup_error_str, parse_ai_output, remove_extra_indentation
-from unittestai.magic import cleanup_implementation, MagicClass
+from unvibe import TestCase, ai
+from unvibe.tests_container import count_assertions
+from unvibe.core import cleanup_error_str, parse_ai_output, remove_extra_indentation
+from unvibe.magic import cleanup_implementation, MagicClass
 
 
 class CoreTest(unittest.TestCase):
@@ -80,13 +80,13 @@ class CoreTest(unittest.TestCase):
     def test_cleanup_error_str(self):
         error_str = '''
             Traceback (most recent call last):
-              File "/Users/claudio/projects/unitai/tests/basic.py", line 47, in test_pitagoras
+              File "/Users/claudio/projects/u/tests/basic.py", line 47, in test_pitagoras
                 self.assertEqual(pitagoras(3, 4), 5)
                                  ^^^^^^^^^^^^^^^
-              File "/Users/claudio/projects/unitai/tests/basic.py", line 43, in pitagoras
+              File "/Users/claudio/projects/u/tests/basic.py", line 43, in pitagoras
                 return sqrt(add(exp(a, 2), exp(b, 2)))
                                 ^^^^^^^^^
-              File "/Users/claudio/projects/unitai/unitai/__init__.py", line 54, in __call__
+              File "/Users/claudio/projects/u/u/__init__.py", line 54, in __call__
                 return eval(f'{self.func_name}(*args, **kwargs)')  # then call it
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
               File "<string>", line 1, in <module>
@@ -102,10 +102,10 @@ class CoreTest(unittest.TestCase):
     def test_cleanup_error_str_2(self):
         error_str = '''
             Traceback (most recent call last):
-              File "/Users/claudio/projects/unitai/tests/test_basic.py", line 19, in test_addition
+              File "/Users/claudio/projects/u/tests/test_basic.py", line 19, in test_addition
                 self.assertEqual(fun(1, 1), 2)
                                  ^^^^^^^^^
-              File "/Users/claudio/projects/unitai/unitai/magic.py", line 36, in __call__
+              File "/Users/claudio/projects/u/u/magic.py", line 36, in __call__
                 assert self.impl is not None, f'Implementation not set for {self}'
                        ^^^^^^^^^^^^^^^^^^^^^
             AssertionError: Implementation not set for MagicFunction(@ai def fun(a, b): """Implements addition.""" pass…...)

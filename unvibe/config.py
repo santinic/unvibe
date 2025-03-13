@@ -2,8 +2,8 @@ import os
 import sys
 import tomllib
 
-config_file_name = '.unitai.toml'
-doc_url = 'https://github.com/santinic/unitai'
+config_file_name = '.unvibe.toml'
+doc_url = 'https://github.com/santinic/unvibe'
 
 
 def read_config():
@@ -34,7 +34,7 @@ def check_config(config):
 
 def config_get_or(section, key, default=None):
     if section not in config:
-        raise f'Section [{section}] not found in {config_file_name}. Please check documentation: {doc_url}'
+        raise Exception(f'Section [{section}] not found in {config_file_name}. Please check documentation: {doc_url}')
     if key in config[section]:
         return config[section][key]
     return default

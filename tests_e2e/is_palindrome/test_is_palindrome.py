@@ -1,9 +1,8 @@
-import unittest
-
+import unvibe
 from tests_e2e.is_palindrome.is_palindrome import Utils
 
 
-class TestIsPalindrome(unittest.TestCase):
+class TestIsPalindrome(unvibe.TestCase):
     def test_is_palindrome(self):
         utils = Utils()
         self.assertTrue(utils.is_palindrome('racecar'))

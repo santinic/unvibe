@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from unittest import TestCase
 
-import unittestai
-from unittestai import ai
+import unvibe
+from unvibe import ai
 
 
 class TestMagicClass(TestCase):

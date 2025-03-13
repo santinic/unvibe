@@ -1,8 +1,8 @@
 import unittest
 
-import unittestai
+import unvibe
 from tests.SearchTest import SearchTest
-from unittestai import ai
+from unvibe import ai
 
 
 class BasicTests(SearchTest):
@@ -12,7 +12,7 @@ class BasicTests(SearchTest):
             """Implements addition."""
             pass
 
-        class AdditionTestClass(unittestai.TestCase):
+        class AdditionTestClass(unvibe.TestCase):
             def test_addition(self):
                 self.assertEqual(fun(1, 1), 2)
                 self.assertEqual(fun(1, 2), 3)
@@ -29,7 +29,7 @@ class BasicTests(SearchTest):
             """Implements sqrt with Newton's method"""
             pass
 
-        class SqrtTest(unittestai.TestCase):
+        class SqrtTest(unvibe.TestCase):
             def test_sqrt_integer(self):
                 self.assertEqual(sqrt(4), 2)
                 self.assertEqual(sqrt(16), 4)

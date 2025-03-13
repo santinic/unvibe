@@ -6,7 +6,7 @@ from abc import abstractmethod
 from pathlib import Path
 from unittest import TestSuite, TestLoader, TestCase
 
-from unittestai.suite import CountingTestSuite
+from unvibe.suite import CountingTestSuite
 
 
 def count_assertions(src: str) -> int:

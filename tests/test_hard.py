@@ -1,7 +1,7 @@
 import unittest
-import unittestai
+import unvibe
 from tests.SearchTest import SearchTest
-from unittestai import ai
+from unvibe import ai
 
 
 # @unittest.skip("Skip this test")
@@ -12,7 +12,7 @@ class TestHard(SearchTest):
             """Implementation of complex numbers in plain Python"""
             pass
 
-        class ComplexTestClass(unittestai.TestCase):
+        class ComplexTestClass(unvibe.TestCase):
             def test_complex_init(self):
                 # Test with real and imaginary parts
                 c = Complex(3, 4)
@@ -100,7 +100,7 @@ class TestHard(SearchTest):
             Use as many auxiliary functions as needed."""
             pass
 
-        class LispInterpreterTestClass(unittestai.TestCase):
+        class LispInterpreterTestClass(unvibe.TestCase):
             def test_calculator(self):
                 self.assertEqual(lisp("(+ 1 2)"), 3)
                 self.assertEqual(lisp("(* 2 3)"), 6)
