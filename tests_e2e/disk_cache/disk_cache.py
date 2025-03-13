@@ -13,6 +13,11 @@ def disk_cache():
 
 
 @ai
+def reset_cache():
+    """this function resets the cache_file"""
+    pass
+
+@ai
 def get_keys() -> Set[str]:
     """this function returns all the keys in cache_file"""
     pass

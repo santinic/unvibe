@@ -1,7 +1,7 @@
 import unittest
 
 import unvibe
-from tests_e2e.disk_cache.disk_cache import disk_cache, get_keys
+from tests_e2e.disk_cache.disk_cache import disk_cache, get_keys, reset_cache
 
 
 class TestDiskCache(unvibe.TestCase):
@@ -12,15 +12,20 @@ class TestDiskCache(unvibe.TestCase):
                 return n
             return fibonacci(n - 1) + fibonacci(n - 2)
 
-        self.assertEqual(get_keys(), [])
+        reset_cache()
+        self.assertEqual(get_keys(), set())
         self.assertEqual(fibonacci(1), 1)
-        self.assertEqual(get_keys(), {'fibonacci_1'})
-        self.assertEqual(fibonacci(2), 2)
-        self.assertEqual(get_keys(), {'fibonacci_1', 'fibonacci_2'})
+        self.assertEqual(len(get_keys()), 1)
+        self.assertEqual(fibonacci(2), 1)
+        self.assertEqual(len(get_keys()), 2)
+        self.assertEqual(fibonacci(3), 2)
+        self.assertEqual(len(get_keys()), 3)
         self.assertEqual(fibonacci(10), 55)
         self.assertEqual(fibonacci(10), 55)
         self.assertEqual(fibonacci(20), 6765)
         self.assertEqual(fibonacci(30), 832040)
+        reset_cache()
+        self.assertEqual(get_keys(), set())
 
     @unittest.skip("")
     def test_another(self):

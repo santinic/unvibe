@@ -3,6 +3,7 @@ import os
 import sys
 from bigtree import Node, print_tree, tree_to_dot
 
+from unvibe import project_name
 from unvibe.core import State
 
 

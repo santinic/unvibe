@@ -30,7 +30,10 @@ def generate_new_state(count, state: State, temperature: float, tests_container:
     impls = parse_ai_output(resp_text)
     new_state.impls = impls
     pprint(impls)
-    if len(impls) >= len(state.mes):
+    # If returned implementations is subset of expected implementations:
+    has_all_impls = {me.name for me in state.mes} <= set(impls.keys())
+
+    if has_all_impls:
         log(f'Received {len(impls)} implementations, expected {len(state.mes)}')
         for me in new_state.mes:
             if me.name in impls:
@@ -46,9 +49,9 @@ def generate_new_state(count, state: State, temperature: float, tests_container:
     else:
         log('LLM OUTPUT:', resp_text)
         new_state.score = 0
-        expected_func_names = ','.join([me.name for me in new_state.mes])
+        expected_func_names = ', '.join([me.name for me in new_state.mes])
         new_state.errors = [f'Expected implementations for {expected_func_names}.\n'
-                            f'Did you use <implement name="..."> ? Try again.']
+                            f'Did you use one <implement> for each function? Try again.']
         log(new_state.errors)
     return new_state
 
@@ -72,7 +75,7 @@ def start_search(mes: List[MagicEntity], tests_container: TestsContainer, source
 def get_temperatures(depth):
     random_spread = config_get_or('search', 'random_spread', 2)
     if depth == 0:
-        random_spread = config_get_or('search', 'initial_random_spread', 10)
+        random_spread = config_get_or('search', 'initial_spread', 10)
     random_type = config_get_or('search', 'random_type', 'uniform')
     max_temperature = config_get_or('search', 'max_temperature', 0.7)
 

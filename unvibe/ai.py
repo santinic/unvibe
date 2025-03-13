@@ -1,5 +1,4 @@
 import ollama
-import redis
 import anthropic
 from typing import List
 from openai import OpenAI
@@ -7,34 +6,12 @@ from google import genai
 
 from . import MagicFunction
 from .config import config
+from .disk_cache import disk_cached
 
 total_input_tokens = 0
 total_output_tokens = 0
 
-
-def cached(func):
-    return func
-
-
-def redis_cached(func):
-    """redis memoization for functions"""
-    redis_client = redis.Redis(host=config['cache']['host'], port=config['cache']['port'], db=config['cache']['db'])
-    redis_client.ping()
-
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)  # bypass
-        key = f'{func.__name__}__{args}__{kwargs}'
-        if redis_client.exists(key):
-            print('Return from cache', key[:150] + '…')
-            bytes = redis_client.get(key)
-            result = bytes.decode('utf-8')
-        else:
-            result = func(*args, **kwargs)
-            redis_client.set(key, result)
-            redis_client.expire(key, config['cache']['expire'])
-        return result
-
-    return wrapper
+cached = disk_cached
 
 
 @cached
@@ -79,8 +56,7 @@ def call_claude(system, prompt, temperature):
         model=config['ai']['model'],
         max_tokens=1000,
         temperature=temperature,
-        system=system,
-        messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}]
+        messages=[{"role": "user", "content": [{"type": "text", "text": prompt + '\n' + system}]}]
     )
     # print('llm output:', message.content)
     global total_input_tokens, total_output_tokens
@@ -97,7 +73,7 @@ def call_ollama(system, prompt, temperature, model):
     client = ollama.Client(host=config['ai']['host'])
     resp = client.generate(
         model=model,
-        prompt=system + '\n' + prompt,
+        prompt='\n' + prompt + '\n' + system,
         options=dict(temperature=temperature))
     return resp.response
 
@@ -156,7 +132,8 @@ Traceback (most recent call last):
 
 system = ("- You only write code inside the <implement> tags.\n"
           "- No explanations before or after.\n"
-          "- Implement ONLY the requested functions! no wrappers, only the function.\n"
+          "- Implement ONLY the requested functions. "
+          "- Use one <implement> for each function.\n"
           "- If errors and implementation are already in the input, implement again fixing the errors.\n"
           "- Use as many <implement> as needed. Every function should be in it own <implement> tag.\n"
           "- Write all import inside functions.\n"
@@ -166,7 +143,7 @@ system = ("- You only write code inside the <implement> tags.\n"
 
 def ai_call(mfs: List[MagicFunction], context, tests, errors, temperature) -> str:
     assert context.strip() != '', 'Context should not be empty'  # TODO: Catch earlier
-    func_names_str = ' '.join([mf.name for mf in mfs])
+    func_names_str = ', '.join([mf.name for mf in mfs])
     errors_tag = ''
     fix_msg = ''
     if len(errors) > 0:
