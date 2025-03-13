@@ -70,8 +70,10 @@ def start_search(mes: List[MagicEntity], tests_container: TestsContainer, source
     return best_state
 
 
-def get_temperatures():
+def get_temperatures(depth):
     random_spread = config_get_or('search', 'random_spread', 2)
+    if depth == 0:
+        random_spread = config_get_or('search', 'initial_random_spread', 10)
     random_type = config_get_or('search', 'random_type', 'uniform')
     max_temperature = config_get_or('search', 'max_temperature', 0.7)
 
@@ -132,7 +134,7 @@ def search(mes: List[MagicEntity], test_container: TestsContainer, sources=''):
         # For each state, generate a bunch of new states feeding back the current test errors
         for state in states:
             # Generate a bunch of new states: generate code with LLMs and run the tests to get the score
-            for temp in get_temperatures():
+            for temp in get_temperatures(depth):
                 log('Temperature', temp)
                 count += 1
                 new_state = generate_new_state(count, state, temp, test_container)
@@ -161,9 +163,6 @@ def run_tests(tests_container: TestsContainer, new_state: State):
     """Runs the tests and saves the score/assertions info/errors in the new_state"""
     test_suite = tests_container.generate_test_suite()
     runner = unittest.TextTestRunner()
-    assert test_suite.total_passed_assertions == 0
-    assert test_suite.total_executed_assertions == 0
-    assert test_suite.total_failed_assertions == 0
     result = runner.run(test_suite)
     if result.testsRun == 0:
         raise f"Test class {test_suite} has no tests."
@@ -188,8 +187,6 @@ def run_tests(tests_container: TestsContainer, new_state: State):
     error_strings = []
     for test_suite, error_str in result.errors + result.failures:
         error_strings.append(cleanup_error_str(error_str))
-    # if score < 1:
-    #     assert sum([len(s) for s in error_strings]) > 0, 'Errors should be populated if score < 1'
     new_state.passed_assertions = total_passed_assertions
     new_state.executed_assertions = total_executed_assertions
     new_state.failed_assertions = total_failed_assertions
@@ -198,7 +195,7 @@ def run_tests(tests_container: TestsContainer, new_state: State):
     new_state.score = score
 
 
-def remove_lines_with(lines, is_target):
+def remove_lines_with(lines, is_target, minus=1, plus=2):
     try:
         target_line = -1
         for i, line in enumerate(lines):
@@ -207,7 +204,7 @@ def remove_lines_with(lines, is_target):
                 break
         if target_line >= 0:
             # Remove the target line and those before and after:
-            lines = lines[:target_line - 1] + lines[target_line + 2:]
+            lines = lines[:target_line - minus] + lines[target_line + plus:]
         return lines
     except Exception as e:
         traceback.print_exc()
@@ -223,6 +220,8 @@ def cleanup_error_str(error_str):
     lines = remove_lines_with(lines, lambda line: 'eval(' in line and '{self.func_name}' in line)
     lines = remove_lines_with(lines, lambda line: 'exec(code)' in line)
     lines = remove_lines_with(lines, lambda line: 'return ___eval(' in line)
+    lines = remove_lines_with(lines, lambda line: 'line ' in line and 'in wrapper' in line, minus=0, plus=2)
+    lines = remove_lines_with(lines, lambda line: 'line ' in line and 'in wrapper' in line, minus=0, plus=2)
 
     # Put back together the redacted lines
     error_str = '\n'.join(lines)

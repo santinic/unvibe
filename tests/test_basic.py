@@ -108,4 +108,4 @@ class BasicTests(SearchTest):
                 self.assertEqual(bubble_sort([4, 3, 2, 1]), [1, 2, 3, 4])
 
         state = self.base([bubble_sort], TestBubbleSort)
-        self.assertEqual(state.passed_assertions, None)  # plain unittest.TestCase
+        self.assertEqual(state.passed_assertions, None)  # plain unittest.

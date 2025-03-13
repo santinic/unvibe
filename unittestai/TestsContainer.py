@@ -1,3 +1,4 @@
+import importlib
 import inspect
 import sys
 import unittest
@@ -15,6 +16,13 @@ def count_assertions(src: str) -> int:
         if 'self.assert' in line and not line.strip().startswith('#'):
             count += 1
     return count
+
+def import_from_path(module_name, file_path):
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 class TestsContainer:
@@ -60,27 +68,29 @@ class FolderPatternTestsContainer(TestsContainer):
         self.test_sources = self._get_all_test_sources()
 
     def _get_all_test_sources(self) -> str:
-        tests_sources = Path(self.test_folder)
-        if not tests_sources.exists():
-            print('The indicated folder does not exist:', tests_sources)
-            sys.exit(1)
-        if tests_sources.is_file():
-            tests_sources = [tests_sources]
-
-        tests_sources = list(tests_sources.glob(self.pattern))
-        if len(tests_sources) == 0:
-            print('No test files found in', self.test_folder)
-            sys.exit(1)
-        print(f'{len(tests_sources)} test files found')
-        tests_sources = '\n'.join([f.read_text() for f in tests_sources])
-        return tests_sources
+        tests_path = Path(self.test_folder)
+        if tests_path.is_file():
+            tests_file_names = [tests_path]
+        else:
+            tests_file_names = list(tests_path.glob(self.pattern))
+            if len(tests_file_names) == 0:
+                print('No test files found in', self.test_folder)
+                sys.exit(1)
+            print(f'{len(tests_file_names)} test files found')
+        ctx = '\n'.join([f.read_text() for f in tests_file_names])
+        return ctx
 
     def generate_test_suite(self):
-        test_loader = unittest.TestLoader()
-        test_loader.suiteClass = CountingTestSuite  # Count the passed assertions if possible
-        test_suite: TestSuite = test_loader.discover(self.test_folder, self.pattern)
-        print(f'{test_suite.countTestCases()} test cases found')
-        return test_suite
+        if Path(self.test_folder).is_file():
+            module = import_from_path('module', self.test_folder)
+            return unittest.TestLoader().loadTestsFromModule(module)
+        else:
+            # is a folder
+            test_loader = unittest.TestLoader()
+            test_loader.suiteClass = CountingTestSuite  # Count the passed assertions if possible
+            test_suite: TestSuite = test_loader.discover(self.test_folder, self.pattern)
+            print(f'{test_suite.countTestCases()} test cases found')
+            return test_suite
 
     def get_source(self):
         return self.test_sources

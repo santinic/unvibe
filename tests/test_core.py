@@ -143,6 +143,24 @@ UnboundLocalError: cannot access local variable 'parse_token' where it is not as
         self.assertNotIn('__eval(', ret)
         self.assertNotIn('^^^^^^^^^^^^^^^^^^^^', ret)
 
+    def test_cleanup_error_str_5(self):
+        text = '''
+        Traceback (most recent call last):
+  line 24, in test_sqrt_negative
+    self.assertAlmostEquals(my_sqrt(-4), 2, 2)
+  line 57, in wrapper
+    raise e
+  line 52, in wrapper
+    method(*args, **kwargs)
+AssertionError: 2j != 2 within 2 places (2.8284271247461903 difference)
+'''
+        ret = cleanup_error_str(text)
+        print(ret)
+        self.assertNotIn('wrapper', ret)
+        self.assertNotIn('method(', ret)
+        self.assertNotIn('raise e', ret)
+
+
     # def test_match_indentation(self):
     #     orig = '''
     #     @ai

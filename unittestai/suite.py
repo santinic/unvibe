@@ -48,14 +48,11 @@ class TestCase(unittest.TestCase):
         def wrapper(*args, **kwargs):
             self.incr_assertions_counter('executed_assertions')
             # with self.subTest():
-            print(*args, **kwargs)
             try:
                 method(*args, **kwargs)
-                print('pass')
                 self.incr_assertions_counter('passed_assertions')
-                print('\t\t', self._outcome.result.passed_assertions)
+                # print('\t\t', self._outcome.result.passed_assertions)
             except AssertionError as e:
-                print('fail', e)
                 self.incr_assertions_counter('failed_assertions')
                 raise e
 

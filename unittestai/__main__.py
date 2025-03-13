@@ -1,9 +1,10 @@
 import argparse
 import sys
+import unittest
 from datetime import datetime
 from pathlib import Path
 
-from unittestai import magic_entities
+from unittestai import magic_entities, log
 from unittestai.TestsContainer import FolderPatternTestsContainer
 from unittestai.core import start_search
 from unittestai.state import State
@@ -14,27 +15,35 @@ epilog = '''examples:
 '''
 
 
-def main():
+def parse_args_and_run_main() -> State:
     parser = argparse.ArgumentParser(
         description='UnitAI - Generate code that pass unit-tests',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=epilog)
-    parser.add_argument('sources', help='source file or sources folder')
-    parser.add_argument('tests', help='unit test file or tests folder')
+    parser.add_argument('sources', help='sources folder')
+    parser.add_argument('tests', help='unit-tests folder')
     parser.add_argument('-o', '--output_folder', default='.', help='output folder for new implementations')
     parser.add_argument('-p', '--pattern', default='test*.py', help='pattern for test files')
     if len(sys.argv) <= 2:
         parser.print_help()
         sys.exit(0)
     args = parser.parse_args()
+    return main(args)
+
+
+def main(args) -> (State, str):
+    log('Sources:', args.sources)
+    log('Tests:', args.tests)
+
     tests_container = FolderPatternTestsContainer(args.tests, args.pattern)
     tests_container.generate_test_suite()
-    context = get_context(args)
+    sources = get_sources_context(args)
     best_state = start_search(magic_entities, tests_container, sources)
-    write_output_folder(best_state, args.output_folder)
+    output_file = write_output_folder(best_state, args.output_folder)
+    return best_state, output_file
 
 
-def get_context(args) -> str:
+def get_sources_context(args) -> str:
     sources = Path(args.sources)
     if sources.is_file():
         return sources.read_text()
@@ -76,7 +85,8 @@ def write_output_folder(state: State, output_folder):
     with open(file_path, 'w') as f:
         f.write(final_text)
     print('Written results to', file_path)
+    return file_path
 
 
 if __name__ == '__main__':
-    main()
+    parse_args_and_run_main()
