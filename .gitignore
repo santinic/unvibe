@@ -173,3 +173,7 @@ cython_debug/
 .idea
 .unvibe.toml
 tree_*.html
+unvibe_output*
+unvibe_report*
+tree_*
+*.pkl

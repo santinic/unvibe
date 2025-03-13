@@ -18,7 +18,7 @@ Just add `unvibe` as a dependency to your project:
 
 ## Example
 
-First define a new function in your existing Python project. Then annotate it with `@ai`: 
+First define a new function in your existing Python project. Then annotate it with `@ai`:
 Let's suppose this is in `lisp.py`:
 
 ```python
@@ -84,9 +84,9 @@ model = "claude-3-5-haiku-latest"
 max_tokens = 5000
 
 # Or, to use a local Ollama:
-[ai]                                   
-provider = "ollama"            
-model = "deepseek-r1:8b" 
+[ai]
+provider = "ollama"
+model = "deepseek-r1:8b"
 host = "http://localhost:11434"
 
 # To use OpenAI or DeepSeek API:
@@ -108,19 +108,8 @@ model = "gemini-2.0-flash"
 random_spread = 4       # How many random tries to make before selecting the best move.
 max_depth = 8           # Maximum depth of the search tree.
 max_temperature = 0.3   # Picks random temperatures up to this value.
-                        # Some models perform better at lower temps, in general
-                        # Higher temperature = more exploration
-
-# Cache may help save some money/time when re-running the same unit-tests.
-# If you don't want to use cache, comment out this section.
-[cache]
-provider = "redis"    
-host = "localhost"
-port = 6379
-password = ""
-db = 0
-expire = 604800
-
+# Some models perform better at lower temps, in general
+# Higher temperature = more exploration
 ```
 
 ## Research
@@ -134,13 +123,6 @@ This approach has been explored in various research papers. For example, from
 > non-trivial functional unit test consistent with the user intent within an average
 > of 1.69 user queries for 90.40% of the examples for this dataset.
 
-## Citation
+## Related Article
 
-```
-@article{santini2025,
-  title={Unvibe: Generate code that passes unit-tests},
-  url={https://claudio.uk/posts/unvibe.html}, 
-  author={Santini, Claudio},
-  year={2025}
-}
-```
+For more information, check the original article: [Unvibe: Generate code that passes unit-tests](https://claudio.uk/posts/unvibe.html)

@@ -25,6 +25,3 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 unvibe = "unvibe.__main__:parse_args_and_run_main"
 unvibe-server = "unvibe.server:__main__"
-
-[tool.poetry]
-package-mode = false
