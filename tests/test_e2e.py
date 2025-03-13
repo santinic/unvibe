@@ -6,7 +6,7 @@ from unittest import TestCase
 import unvibe
 from unvibe.__main__ import main
 
-base_folder = "../tests_e2e"
+base_folder = "./tests_e2e"
 
 
 class TestEndToEnd(TestCase):

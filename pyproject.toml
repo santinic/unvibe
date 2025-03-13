@@ -1,6 +1,6 @@
 [project]
 name = "unvibe"
-version = "0.1.0"
+version = "0.1.2"
 description = "Generate code from unit-tests"
 authors = [
     {name = "Claudio Santini",email = "hireclaudio@gmail.com"}
