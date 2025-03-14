@@ -4,11 +4,13 @@ Unvibe quickly generates many alternative implementations for functions
 and classes you annotate with `@ai`, and re-runs your unit-tests until
 it finds a correct implementation.
 
-The algorithm tries
-
 This approach has been demonstrated in research and in practice to produce
 much better results than simply using code-generation alone
 (see [Research Chapter](#research)).
+
+It's particularly effective on large projects with decent test coverage.
+
+It works with most AI providers: local Ollama, OpenAI, DeepSeek, Claude, Gemini,
 
 ## Install
 
@@ -19,7 +21,7 @@ Just add `unvibe` as a dependency to your project:
 ## Example
 
 First define a new function in your existing Python project. Then annotate it with `@ai`:
-Let's suppose this is in `lisp.py`:
+Let's implement a Lisp interpreter in Python with Unvibe. We start with creating a `lisp.py`:
 
 ```python
 from unvibe import ai
@@ -27,11 +29,12 @@ from unvibe import ai
 
 @ai
 def lisp(expr: str) -> bool:
-    """A lisp interpreter in plain Python, don't use external libraries."""
+    """A simple lisp interpreter compatible with Python lists and functions"""
     pass
 ```
 
-Now, write a few unit-tests, for example in `test_list.py`, to define what the function should do:
+Now, let's write a few unit-tests, to define how the function should behave. 
+In `test_list.py`:
 
 ```python
 import unvibe
@@ -56,16 +59,69 @@ class LispInterpreterTestClass(unvibe.TestCase):
         self.assertEqual(lisp("(sum (list 1 2 3)"), 6)
 ```
 
-Now, let's use UnitAI to search for a valid implementation that passes all the tests:
+Now, we can use UnitAI to search for a valid implementation that passes all the tests:
 
 ```
-$ python -m unvibe test_lisp.py
+$ python -m unvibe lisp.py test_lisp.py
 ```
 
 The library will re-run the tests and generate many alternatives, and keep exploring the ones that pass
 more tests, while feeding back the test errors to the LLM. In the end you will find a new file
-called `unvibe_lisp.py` with a valid implementation. If multiple valid implementations are found,
-you will find them in the folder.
+called `unvibe_lisp.py` with a valid implementation:
+
+```python
+# Unvibe Execution output.
+# This implementation passed all tests
+# Score: 1.0
+# Passed assertions: 7/7 
+
+
+def lisp(exp):
+    def tokenize(exp):
+        return exp.replace('(', ' ( ').replace(')', ' ) ').split()
+
+    def parse(tokens):
+        if len(tokens) == 0:
+            raise SyntaxError('Unexpected EOF')
+        token = tokens.pop(0)
+        if token == '(':
+            L = []
+            while tokens[0] != ')':
+                L.append(parse(tokens))
+            tokens.pop(0)  # Remove ')'
+            return L
+        elif token == ')':
+            raise SyntaxError('Unexpected )')
+        else:
+            try:
+                return int(token)
+            except ValueError:
+                return token
+
+    def evaluate(x):
+        if isinstance(x, list):
+            op = x[0]
+            args = x[1:]
+            if op == '+':
+                return sum(evaluate(arg) for arg in args)
+            elif op == '*':
+                result = 1
+                for arg in args:
+                    result *= evaluate(arg)
+                return result
+            elif op == 'list':
+                return [evaluate(arg) for arg in args]
+            else:
+                # Call Python functions
+                return globals()[op](*[evaluate(arg) for arg in args])
+        return x
+
+    tokens = tokenize(exp)
+    return evaluate(parse(tokens))
+```
+
+
+
 
 ## Setup & Configuration
 
