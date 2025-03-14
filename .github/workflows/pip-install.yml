@@ -1,0 +1,56 @@
+name: Installing via pip and running
+run-name: pip install and run
+on: [ push, pull_request ]
+jobs:
+  install-and-run-on-python-3-11:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: python -m pip install unvibe
+      - name: check it runs as module
+        run: python -m unvibe
+      - name: check it runs as script
+        run: unvibe --help
+  install-and-run-on-python-3-12:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: python -m pip install unvibe
+      - name: check it runs as module
+        run: python -m unvibe
+      - name: check it runs as script
+        run: unvibe --help
+  install-and-run-on-python-3-10:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install
+        run: python -m pip install unvibe
+      - name: check it runs as module
+        run: python -m unvibe
+      - name: check it runs as script
+        run: unvibe --help
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: python -m pip install unvibe
+      - name: check it runs as module
+        run: python -m unvibe
+      - name: check it runs as script
+        run: unvibe --help
