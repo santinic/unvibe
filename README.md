@@ -15,8 +15,7 @@ It's particularly effective on large projects with decent test coverage.
 
 It works with most AI providers: local Ollama, OpenAI, DeepSeek, Claude, Gemini,
 
-![Unvibe diagram](https://raw.githubusercontent.com/santinic/unvibe/refs/heads/main/img/unvbie.drawio.svg)
-
+![Unvibe diagram](https://raw.githubusercontent.com/santinic/unvibe/refs/heads/main/img/unvibe.drawio.svg)
 ## Install
 
 Just add `unvibe` as a dependency to your project:
