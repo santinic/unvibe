@@ -8,8 +8,8 @@ and classes you annotate with `@ai`, and re-runs your unit-tests until
 it finds a correct implementation.
 
 This approach has been demonstrated in research and in practice to produce
-much better results than simply using code-generation alone
-(see [Research Chapter](#research)).
+much better results than simply using code-generation alone. For more details,
+read the related article: [Unvibe: Generate code that passes Unit-tests.](https://claudio.uk/posts/unvibe.html).
 
 It's particularly effective on large projects with decent test coverage.
 
@@ -173,14 +173,17 @@ max_temperature = 0.3   # Picks random temperatures up to this value.
 
 ## Research
 
-This approach has been explored in various research papers. For example, from
-"LLM-based Test-driven Interactive Code Generation: User Study and Empirical Evaluation"
-(Microsoft Research) https://arxiv.org/abs/2404.10100v1:
-> Our results are promising with using the OpenAI Codex LLM on MBPP: our best algorithm
-> improves the pass@1 code generation accuracy metric from 48.39% to 70.49% with a single
-> user query, and up to 85.48% with up to 5 user queries. Second, we can generate a
-> non-trivial functional unit test consistent with the user intent within an average
-> of 1.69 user queries for 90.40% of the examples for this dataset.
+
+Similar approaches have been explored in various research papers from DeepMind and Microsoft Research:
+
+* [FunSearch: Mathematical discoveries from program search with large language models](https://www.nature.com/articles/s41586-023-06924-6) (Nature)
+
+* [Gold-medalist Performance in Solving Olympiad Geometry with AlphaGeometry2](https://arxiv.org/pdf/2502.03544) (Arxiv)
+
+* [AI achieves silver-medal standard solving International Mathematical Olympiad problems](https://deepmind.google/discover/blog/ai-solves-imo-problems-at-silver-medal-level/) (DeepMind)
+
+* [LLM-based Test-driven Interactive Code Generation: User Study and Empirical Evaluation](https://arxiv.org/abs/2404.10100v1) (Axiv)
+
 
 ## Related Article
 
