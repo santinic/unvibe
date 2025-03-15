@@ -1,11 +1,9 @@
 import argparse
 import sys
-from datetime import datetime
+import time
 from pathlib import Path
 
 from unvibe import magic_entities, log, project_name
-from unvibe.tests_container import FolderPatternTestsContainer
-from unvibe.core import start_search
 from unvibe.state import State
 
 epilog = f'''examples:
@@ -28,10 +26,13 @@ def parse_args_and_run_main() -> State:
         parser.print_help()
         sys.exit(0)
     args = parser.parse_args()
+
     return main(args)
 
 
 def main(args) -> (State, str):
+    from unvibe.tests_container import FolderPatternTestsContainer
+    from unvibe.core import start_search
     log('Sources:', args.sources)
     log('Tests:', args.tests)
     tests_container = FolderPatternTestsContainer(args.tests, args.pattern)
@@ -70,7 +71,7 @@ def write_output_folder(state: State, output_folder):
 # Score: {state.score}
 # Passed assertions: {state.passed_assertions}/{state.total_assertions} {test_case_msg}
 '''
-    if len(state.errors) > 0:
+    if state.score < 1:
         all_errors = '=====\n'.join(state.errors)
         commented_errors = ''
         for line in all_errors.split('\n'):
@@ -78,9 +79,10 @@ def write_output_folder(state: State, output_folder):
         final_text += commented_errors
     for key, impl in state.impls.items():
         final_text += f'\n{impl}\n'
-    time = datetime.now().strftime('%H-%M-%S')
+    timestamp = int(time.time())
     Path(output_folder).mkdir(exist_ok=True)
-    file_path = Path(output_folder) / f'{project_name}_output_{time}'
+    me_names = '_'.join([me.name for me in state.mes])
+    file_path = Path(output_folder) / f'{project_name}_{me_names}_{timestamp}.py'
     with open(file_path, 'w') as f:
         f.write(final_text)
     print('Written results to', file_path)

@@ -1,11 +1,11 @@
 import unittest
 
 import unvibe
-from tests.SearchTest import SearchTest
+from tests.BaseTest import BaseTest
 from unvibe import ai
 
 
-class BasicTests(SearchTest):
+class BasicTests(BaseTest):
     def test_addition(self):
         @ai
         def fun(a, b):

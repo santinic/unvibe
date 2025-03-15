@@ -1,27 +1,37 @@
 import unittest
 
-from unittest import TestSuite
+from unittest import TestSuite, TextTestResult
+
+
+def incr_assertions_counter(test_case, name):
+    if hasattr(test_case._outcome.result, name):
+        setattr(test_case._outcome.result, name, getattr(test_case._outcome.result, name) + 1)
+    else:
+        setattr(test_case._outcome.result, name, 1)
+
+
+class MyTextTestResult(TextTestResult):
+    def __init_(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def addError(self, test, err):
+        print('>> ERROR')
+        incr_assertions_counter(test, 'ass_failed')
+        incr_assertions_counter(test, 'ass_executed')
+        super().addError(test, err)
 
 
 class CountingTestSuite(TestSuite):
     """A unittest.TestSuite that counts the number of successful assertions."""
 
     def __init__(self, tests=()):
-        self.total_passed_assertions = 0
-        self.total_executed_assertions = 0
-        self.total_failed_assertions = 0
         self.ai_test_case = False
+        self.ass = dict()
         super().__init__(tests)
 
     def _tearDownPreviousClass(self, test, result):
-        if hasattr(result, 'passed_assertions'):
+        if hasattr(result, 'ass_executed'):
             self.ai_test_case = True
-            if hasattr(result, 'passed_assertions'):
-                self.total_passed_assertions = result.passed_assertions
-            if hasattr(result, 'executed_assertions'):
-                self.total_executed_assertions = result.executed_assertions
-            if hasattr(result, 'failed_assertions'):
-                self.total_failed_assertions = result.failed_assertions
         super()._tearDownPreviousClass(test, result)
 
 
@@ -38,22 +48,16 @@ class TestCase(unittest.TestCase):
                 method = getattr(self, name)
                 setattr(self, name, self._wrap_assert(method))
 
-    def incr_assertions_counter(self, name):
-        if hasattr(self._outcome.result, name):
-            setattr(self._outcome.result, name, getattr(self._outcome.result, name) + 1)
-        else:
-            setattr(self._outcome.result, name, 1)
-
     def _wrap_assert(self, method):
         def wrapper(*args, **kwargs):
-            self.incr_assertions_counter('executed_assertions')
-            # with self.subTest():
             try:
                 method(*args, **kwargs)
-                self.incr_assertions_counter('passed_assertions')
+                incr_assertions_counter(self, 'ass_executed')
+                incr_assertions_counter(self, 'ass_passed')
                 # print('\t\t', self._outcome.result.passed_assertions)
-            except AssertionError as e:
-                self.incr_assertions_counter('failed_assertions')
+            except Exception as e:
+                incr_assertions_counter(self, 'ass_executed')
+                incr_assertions_counter(self, 'ass_failed')
                 raise e
 
         return wrapper

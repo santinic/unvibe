@@ -1,10 +1,15 @@
 import os
 import pickle
 
+from unvibe.config import config_get_or
+
 cache_file = 'unvibe_cache.pkl'
 
 
 def disk_cached(func):
+    if config_get_or('search', 'cache', True) is False:
+        return func
+
     def wrapper(*args, **kwargs):
         key = f"{func.__name__}_{args}_{kwargs}"
 

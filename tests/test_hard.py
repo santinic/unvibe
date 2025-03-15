@@ -1,11 +1,9 @@
-import unittest
 import unvibe
-from tests.SearchTest import SearchTest
+from tests.BaseTest import BaseTest
 from unvibe import ai
 
 
-# @unittest.skip("Skip this test")
-class TestHard(SearchTest):
+class TestHard(BaseTest):
     def test_complex_class(self):
         @ai
         class Complex:
@@ -116,6 +114,5 @@ class TestHard(SearchTest):
                 self.assertEqual(lisp("(list (range 3)"), [0, 1, 2])
                 self.assertEqual(lisp("(sum (list 1 2 3)"), 6)
 
-        state = self.base([lisp], LispInterpreterTestClass)
+        state = self.base([lisp], LispInterpreterTestClass, display_tree=True)
         self.assertIn(state.mes[0].name, 'lisp')
-

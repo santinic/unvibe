@@ -64,6 +64,6 @@ def save_bigtree_img(root: State):
     func_names = ','.join([mf.name for mf in root.mes])
     print_tree(bt)
     graph = tree_to_dot(bt, node_colour="gold")
-    file_name = f"tree_{func_names}.png"
+    file_name = f"unvibe_tree_{func_names}.png"
     graph.write_png(file_name)
     return file_name

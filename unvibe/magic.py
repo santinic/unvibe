@@ -1,6 +1,6 @@
-import inspect
 import re
 import sys
+import inspect
 import traceback
 from typing import Union, Type
 

@@ -3,8 +3,7 @@ from typing import List, Union
 from unvibe.suite import TestCase as MyTestCase
 
 from unvibe.magic import MagicFunction, MagicEntity, MagicClass
-from .ai import ai_call
-from .log import log
+from unvibe.log import log
 
 project_name = 'unvibe'
 magic_entities: List[MagicEntity] = []

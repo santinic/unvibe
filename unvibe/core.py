@@ -6,7 +6,9 @@ from pprint import pprint
 from random import random
 from typing import List, Dict
 
-from unvibe import ai_call, magic_entities
+from unvibe import magic_entities
+from unvibe.llm import ai_call
+from unvibe.suite import MyTextTestResult
 from unvibe.tests_container import TestsContainer
 from unvibe.config import config, config_get_or
 from unvibe.log import log
@@ -164,7 +166,7 @@ def search(mes: List[MagicEntity], test_container: TestsContainer, sources='', d
 def run_tests(tests_container: TestsContainer, new_state: State):
     """Runs the tests and saves the score/assertions info/errors in the new_state"""
     test_suite = tests_container.generate_test_suite()
-    runner = unittest.TextTestRunner()
+    runner = unittest.TextTestRunner(resultclass=MyTextTestResult)
     result = runner.run(test_suite)
     if result.testsRun == 0:
         raise Exception(f"Test class {test_suite} has no tests.")
@@ -172,26 +174,26 @@ def run_tests(tests_container: TestsContainer, new_state: State):
     try:
         if not test_suite.ai_test_case:
             raise Exception('Not using unvibe.TestCase')
-        total_passed_assertions = test_suite.total_passed_assertions
-        total_executed_assertions = test_suite.total_executed_assertions
-        total_failed_assertions = test_suite.total_failed_assertions
         log('Using unvibe.TestCase')
+        tot_executed = result.ass_executed
+        tot_passed = result.ass_passed if hasattr(result, 'ass_passed') else 0
+        tot_failed = result.ass_failed if hasattr(result, 'ass_failed') else 0
         total_assertions = tests_container.count_assertions()
-        log(f"Total assertions: {total_assertions}, Passed: {total_passed_assertions}, "
-            f"Executed: {total_executed_assertions}, Failed: {total_failed_assertions}")
-        if total_assertions == 0 or total_passed_assertions > total_assertions:
+        log(f"Total assertions: {total_assertions}, Passed: {tot_passed}, "
+            f"Executed: {tot_executed}, Failed: {tot_failed}")
+        if total_assertions == 0 or tot_passed > total_assertions:
             raise Exception('Invalid assertions count')
-        score = total_passed_assertions / total_assertions
+        score = tot_passed / total_assertions
     except Exception as exc:
         log(exc)
         score = 1 - errors_count / result.testsRun
-        total_passed_assertions, total_executed_assertions, total_assertions, total_failed_assertions = None, None, None, None
+        tot_passed, tot_executed, total_assertions, tot_failed = None, None, None, None
     error_strings = []
     for test_suite, error_str in result.errors + result.failures:
         error_strings.append(cleanup_error_str(error_str))
-    new_state.passed_assertions = total_passed_assertions
-    new_state.executed_assertions = total_executed_assertions
-    new_state.failed_assertions = total_failed_assertions
+    new_state.passed_assertions = tot_passed
+    new_state.executed_assertions = tot_executed
+    new_state.failed_assertions = tot_failed
     new_state.total_assertions = total_assertions
     new_state.errors = error_strings
     new_state.score = score

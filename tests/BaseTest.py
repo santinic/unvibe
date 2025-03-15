@@ -6,7 +6,7 @@ from unvibe.tests_container import ClassTestsContainer
 from unvibe.core import start_search
 
 
-class SearchTest(unittest.TestCase):
+class BaseTest(unittest.TestCase):
     def setUp(self):
         reset()
 
