@@ -1,4 +1,7 @@
 # Unvibe: Generate code that passes unit-tests
+[![Installing via pip and running](https://github.com/santinic/unvibe/actions/workflows/pip-install.yml/badge.svg)](https://github.com/santinic/unvibe/actions/workflows/pip-install.yml)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/unvibe)
+![PyPI - Version](https://img.shields.io/pypi/v/unvibe)
 
 Unvibe quickly generates many alternative implementations for functions
 and classes you annotate with `@ai`, and re-runs your unit-tests until
