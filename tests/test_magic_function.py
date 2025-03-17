@@ -69,7 +69,7 @@ First, I'll look at the current implementation. The function is supposed to retu
 
 I remember that checking a palindrome can be done by comparing the string to its reverse. So, using slicing, `s[::-1]` creates the reversed version of the string. Comparing `s == s[::-1]` should correctly determine if it's a palindrome.
 
-Wait, in the error message, there was an exception about the implementation not being set for `is_palindrome`. Maybe the function wasn't properly annotated or something is missing. Oh, right, perhaps the function needs to be decorated with `@ai` so that UnitAI can recognize it as a testable function. So I should make sure that the decorator is correctly applied.
+Wait, in the error message, there was an exception about the implementation not being set for `is_palindrome`. Maybe the function wasn't properly annotated or something is missing. Oh, right, perhaps the function needs to be decorated with `@ai` so that Unvibe can recognize it as a testable function. So I should make sure that the decorator is correctly applied.
 
 Putting it all together, the corrected function should use slicing to reverse the string and compare it to the original. Also, adding the `@ai` decorator will allow the tests to run properly without throwing exceptions.
 </think>

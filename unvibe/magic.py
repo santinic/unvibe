@@ -10,7 +10,7 @@ annotation_text = '@ai'
 
 impl_is_none_msg = colored(
     'You are probably running a function with @ai annotation without using Unvibe as runner.\n'
-    'To run UnitAI you need to define unit-tests and annotate functions with @ai and then run:\n', 'red')
+    'To run Unvibe you need to define unit-tests and annotate functions with @ai and then run:\n', 'red')
 impl_is_none_msg += (
     '$ unvibe src/ tests/                     # To discover all tests in the tests/\n'
     '$ unvibe src/main.py tests/test_main.py  # To run only the tests in the indicated file')

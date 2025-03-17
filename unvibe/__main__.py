@@ -14,7 +14,7 @@ epilog = f'''examples:
 
 def parse_args_and_run_main() -> State:
     parser = argparse.ArgumentParser(
-        description='UnitAI - Generate code that pass unit-tests',
+        description='Unvibe - Generate code that pass unit-tests',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=epilog)
     parser.add_argument('sources', help='sources folder')

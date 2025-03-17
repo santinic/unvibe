@@ -3,6 +3,8 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/unvibe)
 ![PyPI - Version](https://img.shields.io/pypi/v/unvibe)
 
+[//]: # (The solution to Vibe Coding not scaling to large projects is just to write Unit-Tests, then use a tool to generate many implementations until if finds one that pass all the tests (check Unvibe on GitHub). Basically you vibe the tests, and Unvibe the code.)
+
 Unvibe quickly generates many alternative implementations for functions
 and classes you annotate with `@ai`, and re-runs your unit-tests until
 it finds a correct implementation.
@@ -63,7 +65,7 @@ class LispInterpreterTestClass(unvibe.TestCase):
         self.assertEqual(lisp("(sum (list 1 2 3)"), 6)
 ```
 
-Now, we can use UnitAI to search for a valid implementation that passes all the tests:
+Now, we can use Unvibe to search for a valid implementation that passes all the tests:
 
 ```
 $ python -m unvibe lisp.py test_lisp.py
