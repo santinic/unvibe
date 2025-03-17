@@ -4,7 +4,7 @@ from unittest import TestCase
 import unvibe
 from unvibe.core import run_tests
 from unvibe.state import State
-from unvibe.suite import MyTextTestResult
+from unvibe.suite import UnvibeTestResult
 from unvibe.tests_container import ClassTestsContainer
 
 
@@ -31,7 +31,7 @@ class TestCountingTestCase(TestCase):
     def test_counting(self):
         tests_container = ClassTestsContainer(self.TestClass)
         test_suite = tests_container.generate_test_suite()
-        runner = unittest.TextTestRunner(resultclass=MyTextTestResult)
+        runner = unittest.TextTestRunner(resultclass=UnvibeTestResult)
         result = runner.run(test_suite)
         self.assertEqual(result.testsRun, 4)
         self.assertEqual(len(result.errors), 2)

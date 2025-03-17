@@ -1,23 +1,36 @@
 import unittest
+from collections import defaultdict
 
-from unittest import TestSuite, TextTestResult
-
-
-def incr_assertions_counter(test_case, name):
-    if hasattr(test_case._outcome.result, name):
-        setattr(test_case._outcome.result, name, getattr(test_case._outcome.result, name) + 1)
-    else:
-        setattr(test_case._outcome.result, name, 1)
+from unittest import TestSuite, TextTestResult, TestResult
 
 
-class MyTextTestResult(TextTestResult):
-    def __init_(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+def jet(obj, keys):
+    keys = keys.split('.')
+    try:
+        x = getattr(obj, keys[0])
+        for key in keys[1:]:
+            x = getattr(x, key)
+        return x
+    except AttributeError:
+        return None
+
+class UnvibeTestResult(TestResult):
+    ass_passed: int
+    ass_executed: int
+    ass_failed: int
+
+    def __init__(self, stream, descriptions, verbosity):
+        super().__init__(stream, descriptions, verbosity)
+        self.failed_tests = defaultdict(lambda: 0)
+        self.ass_passed = 0
+        self.ass_executed = 0
+        self.ass_failed = 0
 
     def addError(self, test, err):
-        print('>> ERROR')
-        incr_assertions_counter(test, 'ass_failed')
-        incr_assertions_counter(test, 'ass_executed')
+        method_name = test._testMethodName
+        self.failed_tests[method_name] += 1
+        self.ass_failed += 1
+        self.ass_executed += 1
         super().addError(test, err)
 
 
@@ -45,19 +58,36 @@ class TestCase(unittest.TestCase):
         super().__init__(*args, **kwargs)
         for name in dir(self):
             if name.startswith('assert'):
-                method = getattr(self, name)
-                setattr(self, name, self._wrap_assert(method))
+                assert_method = getattr(self, name)
+                setattr(self, name, self._wrap_assert(assert_method))
 
-    def _wrap_assert(self, method):
+    # def print_status(self, when, method):
+    #     method_name = jet(self, '_testMethodName')
+    #     tuple = (
+    #         jet(self, '_outcome.result.ass_passed'),
+    #         jet(self, '_outcome.result.ass_executed'),
+    #         jet(self, '_outcome.result.ass_failed')
+    #     )
+    #     print(when, '\t\t', method_name, '\t\t', tuple)
+
+    def _wrap_assert(self, assert_method):
         def wrapper(*args, **kwargs):
+            # self.print_status('before', assert_method)
             try:
-                method(*args, **kwargs)
-                incr_assertions_counter(self, 'ass_executed')
-                incr_assertions_counter(self, 'ass_passed')
-                # print('\t\t', self._outcome.result.passed_assertions)
+                assert_method(*args, **kwargs)
+                self._outcome.result.ass_executed += 1
+                self._outcome.result.ass_passed += 1
+                # self.print_status('after', assert_method)
             except Exception as e:
-                incr_assertions_counter(self, 'ass_executed')
-                incr_assertions_counter(self, 'ass_failed')
+                self._outcome.result.ass_executed += 1
+                self._outcome.result.ass_failed += 1
+                # self.print_status('after exc', assert_method)
                 raise e
 
         return wrapper
+
+    # def __setattr__(self, name, value):
+    #     """standard implementation for setattr:"""
+    #     print('SETATTR', name, value)
+    #     self.__dict__[name] = value
+

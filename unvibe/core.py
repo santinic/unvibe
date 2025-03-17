@@ -6,9 +6,11 @@ from pprint import pprint
 from random import random
 from typing import List, Dict
 
+from yaspin import yaspin
+
 from unvibe import magic_entities
 from unvibe.llm import ai_call
-from unvibe.suite import MyTextTestResult
+from unvibe.suite import UnvibeTestResult
 from unvibe.tests_container import TestsContainer
 from unvibe.config import config, config_get_or
 from unvibe.log import log
@@ -131,6 +133,9 @@ def search(mes: List[MagicEntity], test_container: TestsContainer, sources='', d
 
     found = False
     count = 0
+    spinner = yaspin()
+    spinner.start()
+    top_score = -1
     for depth in range(max_depth):
         log('Depth', depth)
         new_states = []
@@ -138,6 +143,7 @@ def search(mes: List[MagicEntity], test_container: TestsContainer, sources='', d
         for state in states:
             # Generate a bunch of new states: generate code with LLMs and run the tests to get the score
             for temp in get_temperatures(depth):
+                log('=============================')
                 log('Temperature', temp)
                 count += 1
                 new_state = generate_new_state(count, state, temp, test_container)
@@ -145,6 +151,9 @@ def search(mes: List[MagicEntity], test_container: TestsContainer, sources='', d
                     continue
                 state.children.append(new_state)
                 new_states.append(new_state)
+                if new_state.score > top_score:
+                    top_score = new_state.score
+                    spinner.text = f'Depth {depth}, Top score: {top_score:.2f}'
                 if new_state.score == 1:
                     # Early quit
                     log('Found perfect score')
@@ -154,20 +163,22 @@ def search(mes: List[MagicEntity], test_container: TestsContainer, sources='', d
         states = states + new_states
         states = sorted(states, key=lambda s: random())
         states.sort(key=lambda s: s.score, reverse=True)
+        top_score = states[0].score
         log('Scores   ', [s for s in states], 'Picking the best', take_best_n)
         states = states[:take_best_n]
-        log('Selected ', [s for s in states])
+        # log('Selected ', [s for s in states])
         if display_tree:
             create_page_and_open_browser(root)
         if found: break
+    spinner.stop()
     return root, states
 
 
 def run_tests(tests_container: TestsContainer, new_state: State):
     """Runs the tests and saves the score/assertions info/errors in the new_state"""
     test_suite = tests_container.generate_test_suite()
-    runner = unittest.TextTestRunner(resultclass=MyTextTestResult)
-    result = runner.run(test_suite)
+    runner = unittest.TextTestRunner(resultclass=UnvibeTestResult)
+    result: UnvibeTestResult = runner.run(test_suite)
     if result.testsRun == 0:
         raise Exception(f"Test class {test_suite} has no tests.")
     errors_count = len(result.failures) + len(result.errors)
@@ -175,22 +186,24 @@ def run_tests(tests_container: TestsContainer, new_state: State):
         if not hasattr(test_suite, 'ai_test_case'):
             raise Exception('Not using unvibe.TestCase')
         log('Using unvibe.TestCase')
-        tot_executed = result.ass_executed
-        tot_passed = result.ass_passed if hasattr(result, 'ass_passed') else 0
-        tot_failed = result.ass_failed if hasattr(result, 'ass_failed') else 0
+
         total_assertions = tests_container.count_assertions()
-        log(f"Total assertions: {total_assertions}, Passed: {tot_passed}, "
-            f"Executed: {tot_executed}, Failed: {tot_failed}")
-        if total_assertions == 0 or tot_passed > total_assertions:
+        log(f"Total assertions: {total_assertions}, Passed: {result.ass_passed}, "
+            f"Executed: {result.ass_executed}, Failed: {result.ass_failed}")
+        if total_assertions == 0:
             raise Exception('Invalid assertions count')
-        score = tot_passed / total_assertions
+        score = result.ass_passed / max(total_assertions, result.ass_executed)
+        tot_executed, tot_passed, tot_failed = result.ass_executed, result.ass_passed, result.ass_failed
     except Exception as exc:
         log(exc)
         score = 1 - errors_count / result.testsRun
         tot_passed, tot_executed, total_assertions, tot_failed = None, None, None, None
+    log(f'Score: {score}')
     error_strings = []
     for test_suite, error_str in result.errors + result.failures:
-        error_strings.append(cleanup_error_str(error_str))
+        cleaned_up = cleanup_error_str(error_str)
+        error_strings.append(cleaned_up)
+        log(cleaned_up)
     new_state.passed_assertions = tot_passed
     new_state.executed_assertions = tot_executed
     new_state.failed_assertions = tot_failed

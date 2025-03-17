@@ -62,9 +62,9 @@ def call_claude(system, prompt, temperature):
     global total_input_tokens, total_output_tokens
     total_input_tokens += message.usage.input_tokens
     total_output_tokens += message.usage.output_tokens
-    input_tokens_cost_1M, output_tokens_cost_1M = 0.80, 4.00
-    cost = (total_input_tokens * input_tokens_cost_1M + total_output_tokens * output_tokens_cost_1M) / 1_000_000
-    print(f'Total input tokens: {total_input_tokens}, Total output tokens: {total_output_tokens}, Est. Cost: {cost}')
+    # input_tokens_cost_1M, output_tokens_cost_1M = 0.80, 4.00
+    # cost = (total_input_tokens * input_tokens_cost_1M + total_output_tokens * output_tokens_cost_1M) / 1_000_000
+    print(f'Total input tokens: {total_input_tokens}, Total output tokens: {total_output_tokens}')
     return message.content[0].text
 
 

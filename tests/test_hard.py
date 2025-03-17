@@ -108,7 +108,7 @@ class TestHard(BaseTest):
                 self.assertEqual(lisp("(* (+ 1 2) (+ 3 4))"), 21)
 
             def test_list(self):
-                self.assertEqual(lisp("(list 1 2 3)"), [1, 2, 3])
+                self.assertEqual(lisp("(list 1 2 3 4)"), [1, 2, 3,4])
 
             def test_call_python_functions(self):
                 self.assertEqual(lisp("(list (range 3)"), [0, 1, 2])
