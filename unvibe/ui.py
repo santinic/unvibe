@@ -52,7 +52,7 @@ def make_bigtree(node: State, is_root=True):
     if is_root:
         name = ','.join([mf.name for mf in node.mes])
     else:
-        name = str(node)
+        name = node.short_repr()
     bt = Node(name)
     for child in node.children:
         bt >> make_bigtree(child, is_root=False)

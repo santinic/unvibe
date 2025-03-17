@@ -1,6 +1,6 @@
 [project]
 name = "unvibe"
-version = "0.1.4"
+version = "0.1.5"
 description = "Generate code from unit-tests"
 authors = [
     {name = "Claudio Santini",email = "hireclaudio@gmail.com"}
@@ -20,7 +20,7 @@ dependencies = [
 
 [tool.poetry]
 name = "unvibe"
-version = "0.1.4"
+version = "0.1.5"
 description = "Generate code from unit-tests"
 
 [build-system]

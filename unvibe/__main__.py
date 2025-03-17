@@ -66,10 +66,11 @@ def write_output_folder(state: State, output_folder):
         msg = '# This is the best implementation we found, but it did not pass all the tests. Check the errors below.'
 
     test_case_msg = f'(make your test classes extend {project_name}.TestCase to see this)' if state.passed_assertions is None else ''
+    denominator = max(state.executed_assertions, state.total_assertions)
     final_text = f'''# {project_name.capitalize()} Execution output.
 {msg}
 # Score: {state.score}
-# Passed assertions: {state.passed_assertions}/{state.total_assertions} {test_case_msg}
+# Passed assertions: {state.passed_assertions}/{denominator} {test_case_msg}
 '''
     if state.score < 1:
         all_errors = '=====\n'.join(state.errors)

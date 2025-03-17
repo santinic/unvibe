@@ -48,6 +48,9 @@ class State:
     def __repr__(self):
         return f'State(#{self.count}, score={self.score:.2f}, errors={len(self.errors)}, temp={self.temperature:.3f})'
 
+    def short_repr(self):
+        return f'<#{self.count}, {self.score:.2f}, {len(self.errors)}, {self.temperature:.3f}>'
+
     def to_dict(self):
         return {
             'count': self.count,
@@ -64,5 +67,6 @@ class State:
             'executed_assertions': self.executed_assertions,
             'failed_assertions': self.failed_assertions,
             'temperature': self.temperature,
-            'children': [child.to_dict() for child in self.children]
+            'children': [child.to_dict() for child in self.children],
+            'short_repr': self.short_repr()
         }
