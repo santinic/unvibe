@@ -18,6 +18,8 @@ It's particularly effective on large projects with decent test coverage.
 It works with most AI providers: local Ollama, OpenAI, DeepSeek, Claude, Gemini,
 
 ![Unvibe diagram](https://raw.githubusercontent.com/santinic/unvibe/refs/heads/main/img/unvibe.drawio.svg)
+
+
 ![Unvibe live execution report (-d option)](https://raw.githubusercontent.com/santinic/unvibe/refs/heads/main/img/ui.png)
 
 ## Install
