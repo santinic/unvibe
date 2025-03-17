@@ -15,8 +15,13 @@ dependencies = [
     "bigtree (>=0.25.1,<0.26.0)",
     "pydot (>=3.0.4,<4.0.0)",
     "yaspin (>=3.1.0,<4.0.0)",
+    "rsa (==4.7)",
 ]
 
+[tool.poetry]
+name = "unvibe"
+version = "0.1.4"
+description = "Generate code from unit-tests"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -25,3 +30,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 unvibe = "unvibe.__main__:parse_args_and_run_main"
 #unvibe-server = "unvibe.server:__main__"
+
+
+

@@ -167,11 +167,15 @@ model = "gemini-2.0-flash"
 
 # Advanced Parameters to tune the search: 
 [search]
-random_spread = 4       # How many random tries to make before selecting the best move.
-max_depth = 8           # Maximum depth of the search tree.
-max_temperature = 0.3   # Picks random temperatures up to this value.
-# Some models perform better at lower temps, in general
-# Higher temperature = more exploration
+initial_spread = 10     # How many random tries to make at depth=0.
+random_spread = 2       # How many random tries to make before selecting the best move.
+max_depth = 30          # Maximum depth of the search tree.
+max_temperature = 1     # Tries random temperature, up to this value.
+max_minutes = 60        # Stop after 60 minutes of search.
+                        # Some models perform better at lower temps, in general
+                        # Higher temperature = more exploration.
+cache = true            # Caches AI responses to a local file to speed up re-runs and
+                        # save money.
 ```
 
 ## Research

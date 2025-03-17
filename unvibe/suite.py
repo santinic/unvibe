@@ -14,6 +14,7 @@ def jet(obj, keys):
     except AttributeError:
         return None
 
+
 class UnvibeTestResult(TestResult):
     ass_passed: int
     ass_executed: int
@@ -38,13 +39,11 @@ class CountingTestSuite(TestSuite):
     """A unittest.TestSuite that counts the number of successful assertions."""
 
     def __init__(self, tests=()):
-        self.ai_test_case = False
+        self.unvibe_test_case = False
         self.ass = dict()
         super().__init__(tests)
 
     def _tearDownPreviousClass(self, test, result):
-        if hasattr(result, 'ass_executed'):
-            self.ai_test_case = True
         super()._tearDownPreviousClass(test, result)
 
 
@@ -73,6 +72,7 @@ class TestCase(unittest.TestCase):
     def _wrap_assert(self, assert_method):
         def wrapper(*args, **kwargs):
             # self.print_status('before', assert_method)
+            self._outcome.result.unvibe_test_case = True
             try:
                 assert_method(*args, **kwargs)
                 self._outcome.result.ass_executed += 1
@@ -90,4 +90,3 @@ class TestCase(unittest.TestCase):
     #     """standard implementation for setattr:"""
     #     print('SETATTR', name, value)
     #     self.__dict__[name] = value
-

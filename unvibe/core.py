@@ -33,7 +33,7 @@ def generate_new_state(count, state: State, temperature: float, tests_container:
     new_state.ai_output = resp_text
     impls = parse_ai_output(resp_text)
     new_state.impls = impls
-    # pprint(impls)
+    pprint(impls)
     # If returned implementations is subset of expected implementations:
     has_all_impls = {me.name for me in state.mes} <= set(impls.keys())
 
@@ -183,10 +183,9 @@ def run_tests(tests_container: TestsContainer, new_state: State):
         raise Exception(f"Test class {test_suite} has no tests.")
     errors_count = len(result.failures) + len(result.errors)
     try:
-        if not hasattr(test_suite, 'ai_test_case'):
+        if not result.unvibe_test_case:
             raise Exception('Not using unvibe.TestCase')
         log('Using unvibe.TestCase')
-
         total_assertions = tests_container.count_assertions()
         log(f"Total assertions: {total_assertions}, Passed: {result.ass_passed}, "
             f"Executed: {result.ass_executed}, Failed: {result.ass_failed}")
