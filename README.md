@@ -3,8 +3,6 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/unvibe)
 ![PyPI - Version](https://img.shields.io/pypi/v/unvibe)
 
-[//]: # (The solution to Vibe Coding not scaling to large projects is just to write Unit-Tests, then use a tool to generate many implementations until if finds one that pass all the tests (check Unvibe on GitHub). Basically you vibe the tests, and Unvibe the code.)
-
 Unvibe quickly generates many alternative implementations for functions
 and classes you annotate with `@ai`, and re-runs your unit-tests until
 it finds a correct implementation.
