@@ -148,7 +148,7 @@ max_tokens = 5000
 # Or, to use a local Ollama:
 [ai]
 provider = "ollama"
-model = "deepseek-r1:8b"
+model = "qwen2.5-coder:7b"
 host = "http://localhost:11434"
 
 # To use OpenAI or DeepSeek API:
